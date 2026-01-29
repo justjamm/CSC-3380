@@ -1,1 +1,1 @@
-# CSC-3380
+# IoT EDR Hub
