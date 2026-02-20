@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RTSP Hub</title>
+    <style>
+        body { background: #111; color: white; font-family: sans-serif; text-align: center; }
+        img { max-width: 100%; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>RTSP Hub</h1>
+    <img id="stream" alt="Camera Stream" />
+    <script>
+        const host = window.location.hostname;
+        const img = document.getElementById('stream');
+        img.src = `http://${host}:8080/stream`;
+        setInterval(() => {
+            img.src = `http://${host}:8080/stream?` + Date.now();
+        }, 100);
+    </script>
+</body>
+</html>

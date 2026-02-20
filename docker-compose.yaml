@@ -1,0 +1,23 @@
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    ports:
+      - "8554:8554"
+      - "1935:1935"
+    environment:
+      - MTX_PATHS_CAM_SOURCE=rtsp://tai123:happymeal123@192.168.0.190:554/stream1
+
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mediamtx
+    restart: always
+
+  webserver:
+    build: ./webserver
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend

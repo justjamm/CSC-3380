@@ -1,0 +1,19 @@
+{
+    "name": "server_dev",
+
+    "build":{"dockerfile": "dockerfile"},
+    "mounts": ["source=server_dev_history,target=/root/.bash_history,type=volume"],
+
+    "customizations": {
+        "vscode": {
+            "settings": {},
+            "extensions": []
+        }
+    },
+    "runArgs": ["--network=host"]
+
+
+
+
+
+}
