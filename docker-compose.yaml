@@ -5,12 +5,12 @@ services:
       - "8554:8554"
       - "1935:1935"
     environment:
-      - MTX_PATHS_CAM_SOURCE=rtsp://tai123:happymeal123@192.168.0.190:554/stream1
+      - MTX_PATHS_CAM_SOURCE=rtsp://${RTSP_USER}:${RTSP_PASS}@${RTSP_HOST}:${RTSP_PORT}/${RTSP_PATH}
 
   backend:
     build: ./backend
     ports:
-      - "8080:8080"
+      - "8082:8080"
     depends_on:
       - mediamtx
     restart: always

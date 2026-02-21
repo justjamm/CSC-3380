@@ -13,9 +13,9 @@
     <script>
         const host = window.location.hostname;
         const img = document.getElementById('stream');
-        img.src = `http://${host}:8080/stream`;
+        img.src = `http://${host}:8082/stream`;
         setInterval(() => {
-            img.src = `http://${host}:8080/stream?` + Date.now();
+            img.src = `http://${host}:8082/stream?` + Date.now();
         }, 100);
     </script>
 </body>
