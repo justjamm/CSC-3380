@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     std::cerr.flush();
     gst_init(&argc, &argv);
 
-    std::string rtsp_url = argc > 1 ? argv[1] : "rtsp://mediamtx:8554/cam";
+    std::string rtsp_url = "rtsp://mediamtx:8554/cam";
 
     std::string pipeline_str =
         "rtspsrc location=" + rtsp_url + " latency=0 ! "

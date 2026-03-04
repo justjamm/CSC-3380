@@ -23,4 +23,4 @@ COPY . .
 
 RUN mkdir build && cd build && cmake .. && make
 
-CMD ["./build/rtsp_hub"]
+CMD ["./build/src/rtsp_hub"]
