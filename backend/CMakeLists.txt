@@ -13,12 +13,7 @@ include_directories(
     third_party/cpp-httplib
 )
 
-add_executable(rtsp_hub src/main.cpp)
+add_subdirectory(src)
 
-target_link_libraries(rtsp_hub
-    ${GSTREAMER_LIBRARIES}
-    ${GSTREAMER_APP_LIBRARIES}
-    Threads::Threads
-)
 
-target_compile_options(rtsp_hub PRIVATE -Wall -Wextra)
+
