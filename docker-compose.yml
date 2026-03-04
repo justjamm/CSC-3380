@@ -1,0 +1,63 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${FRONTEND_PORT:-3001}:3000"
+    # Bind mount removed: DinD/devcontainer can't resolve host paths.
+    # Files come from Dockerfile COPY. Rebuild to pick up changes:
+    #   docker compose up --build frontend
+    environment:
+      - NEXT_PUBLIC_STREAM_URL=${NEXT_PUBLIC_STREAM_URL:-/api}
+      - STREAM_INTERNAL_URL=${STREAM_INTERNAL_URL:-http://backend:8080}
+      - NEXT_PUBLIC_MEDIAMTX_URL=${NEXT_PUBLIC_MEDIAMTX_URL:-http://localhost:8889}
+      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-ws://localhost:8085}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8085}
+      # - WATCHPACK_POLLING=true  # Re-enable if bind mount is restored
+    depends_on:
+      - mediamtx
+      - middleware
+    networks:
+      - edr-network
+
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    ports:
+      - "8554:8554"
+      - "1935:1935"
+      - "8889:8889"
+      - "8189:8189/udp"
+    environment:
+      - MTX_PATHS_CAM_SOURCE=rtsp://${RTSP_USER}:${RTSP_PASS}@${RTSP_HOST}:${RTSP_PORT}/${RTSP_PATH}
+    networks:
+      - edr-network
+
+  middleware:
+    build:
+      context: ./middleware
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${MIDDLEWARE_PORT:-8085}:8080"
+    environment:
+      - PORT=8080
+    networks:
+      - edr-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "${BACKEND_PORT:-8082}:8080"
+    environment:
+      - RTSP_INPUT_URL=${RTSP_INPUT_URL:-rtsp://mediamtx:8554/cam}
+    depends_on:
+      - mediamtx
+    restart: always
+    networks:
+      - edr-network
+
+networks:
+  edr-network:
+    driver: bridge
