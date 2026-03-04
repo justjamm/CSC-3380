@@ -14,11 +14,18 @@ int main(int argc, char* argv[]) {
     auto& manager = SingletonManager::getInstance();
 
     const char* rtsp_env = std::getenv("RTSP_INPUT_URL");
+    const char* rtsp_env_2 = std::getenv("RTSP_INPUT_URL_2");
     std::string rtsp_url = argc > 1 ? argv[1]
                                     : (rtsp_env ? rtsp_env : "rtsp://mediamtx:8554/cam");
+    std::string rtsp_url_2 = argc > 2 ? argv[2]
+                                      : (rtsp_env_2 ? rtsp_env_2 : "rtsp://mediamtx:8554/cam2");
 
     if (!manager.addDevice(cameraFactory, "cam1", rtsp_url)) {
         std::cerr << "Failed to add camera device cam1" << std::endl;
+        return 1;
+    }
+    if (!manager.addDevice(cameraFactory, "cam2", rtsp_url_2)) {
+        std::cerr << "Failed to add camera device cam2" << std::endl;
         return 1;
     }
 
