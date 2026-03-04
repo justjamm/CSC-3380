@@ -9,8 +9,16 @@ const nextConfig = {
         destination: `${streamInternalUrl}/stream`,
       },
       {
+        source: "/api/stream/:path*",
+        destination: `${streamInternalUrl}/stream/:path*`,
+      },
+      {
         source: "/api/mjpeg",
         destination: `${streamInternalUrl}/mjpeg`,
+      },
+      {
+        source: "/api/mjpeg/:path*",
+        destination: `${streamInternalUrl}/mjpeg/:path*`,
       },
       {
         source: "/api/stream-health",

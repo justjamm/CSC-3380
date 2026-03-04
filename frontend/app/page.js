@@ -11,7 +11,7 @@ export default function Home() {
     const img = imgRef.current;
     if (!img) return;
 
-    img.src = `${streamBaseUrl}/mjpeg`;
+    img.src = `${streamBaseUrl}/mjpeg/cam1`;
   }, []);
 
   return (

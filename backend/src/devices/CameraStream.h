@@ -29,11 +29,13 @@ class CameraStream : public ICamera { //CameraStream implements ICamera
     std::vector<uint8_t> getLatestFrame() const override; //can't inline this, needs more complex logic to guarantee race condition-free code.
 
     private:
-    static GstFlowReturn onNewSample(GstAppSink* appsink, gpointer user_data); //hell. check the cpp for more descriptive language
+    static GstFlowReturn onNewSample(GstAppSink* appsink, gpointer user_data); //hell. check the cpp for more descriptive language  
+                                                                                //I lied. this is a purgatory that I'm not willing to try to understand. if it works, it works. image data
+                                                                                //is image data. 
 
     std::string name_;
     std::string rtsp_url_;
-    bool connected_ false;
+    bool connected_ =false;
 
     GstElement* pipeline_ = nullptr;
     GstElement* sink_ = nullptr;
