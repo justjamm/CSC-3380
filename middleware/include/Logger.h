@@ -53,7 +53,11 @@ public:
         }
         static std::string now() {
             auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-            std::tm tm{}; gmtime_r(&t, &tm);
+            std::tm tm{};
+            #ifdef _WIN32
+                gmtime_s(&tm, &t);
+            #else
+                gmtime_r(&t, &tm);
             char buf[32]; std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &tm);
             return buf;
         }
