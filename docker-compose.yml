@@ -42,10 +42,14 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "${MIDDLEWARE_PORT:-8085}:8080"
-    environment:
-      - PORT=8080
+    env_file:
+      - ./middleware/.env
+    depends_on:
+      - backend
     networks:
       - edr-network
+
+  
 
   backend:
     build:
