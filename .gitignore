@@ -27,3 +27,5 @@ rtsp_viewer
 context.md
 fefw.md
 TASKS_BOARD.md
+tasks.json
+trello_sync.py
