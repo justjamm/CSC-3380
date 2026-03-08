@@ -1,7 +1,25 @@
-FROM node:20-alpine
+FROM ubuntu:24.04
+
+RUN apt-get update && apt-get install -y \
+    g++ \
+    cmake \
+    make \
+    libssl-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
-COPY package.json ./
-RUN npm install
+
 COPY . .
+
+RUN curl -o include/httplib.h \
+    https://raw.githubusercontent.com/yhirose/cpp-httplib/master/httplib.h
+
+RUN mkdir -p build && \
+    cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Debug && \
+    make -j$(nproc)
+
 EXPOSE 8080
-CMD ["npm", "run", "dev"]
+
+CMD ["./build/middleware"]
