@@ -42,11 +42,7 @@ enum class StatusCode : std::uint16_t {
     ServiceUnavailable  = 503,
 };
 
-// ---------------------------------------------------------------------------
-// OutputResponse
-// Plain value type representing the fully-assembled outbound response.
-// Passed by value through the pipeline; copy-constructible for serialisation.
-// ---------------------------------------------------------------------------
+
 struct OutputResponse {
     StatusCode  status{StatusCode::Ok};
     Headers     headers;
@@ -59,11 +55,7 @@ struct OutputResponse {
     }
 };
 
-// ---------------------------------------------------------------------------
-// IOutputSerializer
-// Transforms an arbitrary payload into a raw byte body (SRP).
-// One implementation per format: JSON, MessagePack, plain text, etc.
-// ---------------------------------------------------------------------------
+
 class IOutputSerializer {
 public:
     virtual ~IOutputSerializer() = default;
@@ -74,11 +66,7 @@ public:
 
 using SerializerPtr = std::unique_ptr<IOutputSerializer>;
 
-// ---------------------------------------------------------------------------
-// IOutputFilter
-// Single-responsibility transform applied to a response before writing.
-// Filters are composable and must not hold response state between calls.
-// ---------------------------------------------------------------------------
+
 class IOutputFilter {
 public:
     virtual ~IOutputFilter() = default;
@@ -89,11 +77,7 @@ public:
 
 using FilterPtr = std::unique_ptr<IOutputFilter>;
 
-// ---------------------------------------------------------------------------
-// IOutputWriter
-// Flushes the final OutputResponse to a transport (socket, buffer, file).
-// Decoupled from serialisation (ISP: knows nothing about format).
-// ---------------------------------------------------------------------------
+
 class IOutputWriter {
 public:
     virtual ~IOutputWriter() = default;
@@ -105,11 +89,7 @@ public:
 
 using WriterPtr = std::unique_ptr<IOutputWriter>;
 
-// ---------------------------------------------------------------------------
-// IOutputPipeline
-// Orchestrates serialise → filter → write for a single response (SRP / OCP).
-// Callers inject concrete stages; the pipeline owns their lifetimes.
-// ---------------------------------------------------------------------------
+
 class IOutputPipeline {
 public:
     virtual ~IOutputPipeline() = default;
@@ -123,17 +103,12 @@ public:
     [[nodiscard]] virtual std::size_t filterCount() const noexcept = 0;
 };
 
-// ---------------------------------------------------------------------------
-// OutputPipeline
-// Concrete, LSP-compliant implementation of IOutputPipeline.
-// Executes filters in insertion order; thread-compatible (not thread-safe).
-// ---------------------------------------------------------------------------
+
 class OutputPipeline final : public IOutputPipeline {
 public:
     OutputPipeline();
     ~OutputPipeline() override;
 
-    // IOutputPipeline
     void send(OutputResponse response)       override;
     void setSerializer(SerializerPtr serializer) override;
     void addFilter(FilterPtr filter)         override;
@@ -147,4 +122,4 @@ private:
     std::unique_ptr<Impl> impl_;
 };
 
-} // namespace middleware::output
+}

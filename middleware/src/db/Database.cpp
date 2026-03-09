@@ -9,9 +9,7 @@
 
 namespace middleware::db {
 
-// ===========================================================================
-// PooledConnection
-// ===========================================================================
+
 
 PooledConnection::PooledConnection(IDbConnectionPool& pool,
                                    ConnectionPtr       connection) noexcept
@@ -24,7 +22,7 @@ PooledConnection::PooledConnection(PooledConnection&& other) noexcept
 
 PooledConnection& PooledConnection::operator=(PooledConnection&& other) noexcept {
     if (this != &other) {
-        // Return our current connection before taking ownership of other's.
+
         if (pool_ && connection_) {
             pool_->release(std::move(connection_));
         }
@@ -51,9 +49,6 @@ const IDbConnection& PooledConnection::get() const noexcept {
     return *connection_;
 }
 
-// ===========================================================================
-// DbConnectionPool::Impl   (Pimpl — hides synchronisation internals)
-// ===========================================================================
 
 struct DbConnectionPool::Impl {
     explicit Impl(DbConnectionConfig                  cfg,
@@ -62,11 +57,9 @@ struct DbConnectionPool::Impl {
         , factory_(std::move(factory))
         , active_(0) {}
 
-    // Disallow copy/move — owned exclusively by DbConnectionPool.
     Impl(const Impl&)            = delete;
     Impl& operator=(const Impl&) = delete;
 
-    // -----------------------------------------------------------------------
     DbConnectionConfig             config_;
     std::function<ConnectionPtr()> factory_;
 
@@ -76,11 +69,9 @@ struct DbConnectionPool::Impl {
     std::size_t                 active_;
     bool                        shuttingDown_{false};
 
-    // -----------------------------------------------------------------------
     ConnectionPtr acquire() {
         std::unique_lock lock(mtx_);
 
-        // Wait until an idle connection is available or the pool has capacity.
         cv_.wait(lock, [this] {
             return shuttingDown_
                 || !idle_.empty()
@@ -97,8 +88,7 @@ struct DbConnectionPool::Impl {
             conn = std::move(idle_.front());
             idle_.pop();
         } else {
-            // Capacity available — create a new connection outside the lock
-            // to avoid blocking other threads during I/O.
+            
             lock.unlock();
             conn = factory_();
             if (!conn) {
@@ -112,14 +102,12 @@ struct DbConnectionPool::Impl {
         return conn;
     }
 
-    // -----------------------------------------------------------------------
     void release(ConnectionPtr conn) noexcept {
         if (!conn) { return; }
 
         std::lock_guard lock(mtx_);
 
         if (shuttingDown_ || !conn->isOpen()) {
-            // Let the unique_ptr destructor close it.
             --active_;
             cv_.notify_one();
             return;
@@ -130,7 +118,6 @@ struct DbConnectionPool::Impl {
         cv_.notify_one();
     }
 
-    // -----------------------------------------------------------------------
     void initialise(std::size_t minConnections) {
         const std::size_t target =
             std::min(minConnections, config_.maxPoolSize);
@@ -143,19 +130,16 @@ struct DbConnectionPool::Impl {
         }
     }
 
-    // -----------------------------------------------------------------------
     void shutdown() noexcept {
         std::lock_guard lock(mtx_);
         shuttingDown_ = true;
-        // Drain idle connections; active ones are released via PooledConnection
-        // destructors, which call release() and eventually get destroyed.
+        
         while (!idle_.empty()) {
-            idle_.pop();   // unique_ptr destructor closes the connection
+            idle_.pop(); 
         }
         cv_.notify_all();
     }
 
-    // -----------------------------------------------------------------------
     [[nodiscard]] std::size_t idleCount() const noexcept {
         std::lock_guard lock(mtx_);
         return idle_.size();
@@ -167,9 +151,6 @@ struct DbConnectionPool::Impl {
     }
 };
 
-// ===========================================================================
-// DbConnectionPool  (public API delegating to Impl)
-// ===========================================================================
 
 DbConnectionPool::DbConnectionPool(DbConnectionConfig             config,
                                    std::function<ConnectionPtr()> factory)
@@ -209,4 +190,4 @@ void DbConnectionPool::shutdown() noexcept {
     impl_->shutdown();
 }
 
-} // namespace middleware::db
+} 
