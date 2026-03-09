@@ -11,27 +11,19 @@
 
 namespace middleware::db {
 
-// ---------------------------------------------------------------------------
-// Forward declarations
-// ---------------------------------------------------------------------------
+
 class IDbConnection;
 class IDbStatement;
 class IDbTransaction;
 class IDbConnectionPool;
 class DbConnectionPool;
 
-// ---------------------------------------------------------------------------
-// Aliases
-// ---------------------------------------------------------------------------
+
 using Row       = std::unordered_map<std::string, std::string>;
 using ResultSet = std::vector<Row>;
 using Params    = std::vector<std::string>;
 
-// ---------------------------------------------------------------------------
-// IDbStatement
-// Represents a single prepared SQL statement (SRP).
-// Owns no connection; lifetime must not exceed the issuing IDbConnection.
-// ---------------------------------------------------------------------------
+
 class IDbStatement {
 public:
     virtual ~IDbStatement() = default;
@@ -47,11 +39,7 @@ public:
 
 using StatementPtr = std::unique_ptr<IDbStatement>;
 
-// ---------------------------------------------------------------------------
-// IDbTransaction
-// RAII transaction guard (OCP: commit/rollback policy is implementation detail).
-// Destructor rolls back automatically if commit() was never called.
-// ---------------------------------------------------------------------------
+
 class IDbTransaction {
 public:
     virtual ~IDbTransaction() = default;
@@ -64,10 +52,7 @@ public:
 
 using TransactionPtr = std::unique_ptr<IDbTransaction>;
 
-// ---------------------------------------------------------------------------
-// IDbConnection
-// Abstracts a single database connection (ISP: no pool concerns here).
-// ---------------------------------------------------------------------------
+
 class IDbConnection {
 public:
     virtual ~IDbConnection() = default;
@@ -89,10 +74,7 @@ public:
 
 using ConnectionPtr = std::unique_ptr<IDbConnection>;
 
-// ---------------------------------------------------------------------------
-// DbConnectionConfig
-// Plain value type; copy-constructible for pool bookkeeping.
-// ---------------------------------------------------------------------------
+
 struct DbConnectionConfig {
     std::string host{"localhost"};
     std::uint16_t port{5432};
@@ -105,11 +87,7 @@ struct DbConnectionConfig {
     bool tlsEnabled{false};
 };
 
-// ---------------------------------------------------------------------------
-// IDbConnectionPool
-// Manages a bounded pool of reusable connections (SRP / DIP).
-// Callers depend only on this interface; concrete pools are injected.
-// ---------------------------------------------------------------------------
+
 class IDbConnectionPool {
 public:
     virtual ~IDbConnectionPool() = default;
@@ -125,11 +103,7 @@ public:
     [[nodiscard]] virtual const DbConnectionConfig& config() const noexcept = 0;
 };
 
-// ---------------------------------------------------------------------------
-// PooledConnection
-// RAII wrapper returned to callers; automatically releases on destruction.
-// Movable, non-copyable. Satisfies RAII idiom without manual release calls.
-// ---------------------------------------------------------------------------
+
 class PooledConnection final {
 public:
     PooledConnection() = delete;
@@ -152,17 +126,14 @@ private:
     ConnectionPtr      connection_;
 };
 
-// ---------------------------------------------------------------------------
-// DbConnectionPool  (concrete, LSP-compliant implementation of IDbConnectionPool)
-// Thread-safe fixed-size pool backed by a condition variable.
-// ---------------------------------------------------------------------------
+
 class DbConnectionPool final : public IDbConnectionPool {
 public:
     explicit DbConnectionPool(DbConnectionConfig config,
                               std::function<ConnectionPtr()> factory);
     ~DbConnectionPool() override;
 
-    // IDbConnectionPool
+    
     [[nodiscard]] ConnectionPtr acquire()                   override;
     void                        release(ConnectionPtr conn) noexcept override;
     [[nodiscard]] std::size_t   idleCount()   const noexcept override;
@@ -178,4 +149,4 @@ private:
     std::unique_ptr<Impl> impl_;
 };
 
-} // namespace middleware::db
+}

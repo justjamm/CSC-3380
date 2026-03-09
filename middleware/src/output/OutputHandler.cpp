@@ -6,16 +6,12 @@
 
 namespace middleware::output {
 
-// ===========================================================================
-// OutputPipeline::Impl   (Pimpl — hides stage collections from the header)
-// ===========================================================================
 
 struct OutputPipeline::Impl {
     SerializerPtr              serializer;
     std::vector<FilterPtr>     filters;
     WriterPtr                  writer;
 
-    // -----------------------------------------------------------------------
     void send(OutputResponse response) {
         if (!serializer) {
             throw std::runtime_error("OutputPipeline: no serializer set");
@@ -24,29 +20,22 @@ struct OutputPipeline::Impl {
             throw std::runtime_error("OutputPipeline: no writer set");
         }
 
-        // Apply each filter in insertion order.
         for (const auto& filter : filters) {
             filter->apply(response);
         }
 
-        // Serialise body into the response.
         response.body        = serializer->serialize(response);
         response.contentType = serializer->contentType();
 
-        // Hand off to the transport writer.
         writer->write(response);
         writer->flush();
     }
 
-    // -----------------------------------------------------------------------
     void clearFilters() noexcept {
         filters.clear();
     }
 };
 
-// ===========================================================================
-// OutputPipeline   (public API delegating to Impl)
-// ===========================================================================
 
 OutputPipeline::OutputPipeline()
     : impl_(std::make_unique<Impl>()) {}
@@ -86,4 +75,4 @@ void OutputPipeline::clearFilters() noexcept {
     impl_->clearFilters();
 }
 
-} // namespace middleware::output
+}
