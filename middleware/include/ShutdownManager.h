@@ -4,6 +4,8 @@
 #include <vector>
 #include <csignal>
 #include <string>
+#include <unistd.h>
+#include <cstring>
 #include "Logger.h"
 
 // ============================================================
@@ -80,7 +82,8 @@ private:
         (void)sig; // signal name logged via write() below
         // Use write() — async-signal-safe (std::cout is NOT safe in signal handlers)
         const char* msg = "[shutdown] Signal received — initiating graceful shutdown\n";
-        write(STDERR_FILENO, msg, __builtin_strlen(msg));
+        const ssize_t written = ::write(STDERR_FILENO, msg, std::strlen(msg));
+        (void)written;
         s_stopFlag.store(true);
     }
 
