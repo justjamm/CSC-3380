@@ -16,7 +16,7 @@ services:
     #   docker compose up --build frontend
     environment:
       - NEXT_PUBLIC_STREAM_URL=${NEXT_PUBLIC_STREAM_URL:-/api}
-      - STREAM_INTERNAL_URL=${STREAM_INTERNAL_URL:-http://backend:8080}
+      - STREAM_INTERNAL_URL=${STREAM_INTERNAL_URL:-http://motion-detection:8080}
       - NEXT_PUBLIC_MEDIAMTX_URL=${NEXT_PUBLIC_MEDIAMTX_URL:-http://localhost:8889}
       - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-ws://localhost:8085}
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8085}
@@ -26,6 +26,7 @@ services:
       - backend
       - mediamtx
       - middleware
+      - motion-detection
     networks:
       - edr-network
 
@@ -44,12 +45,30 @@ services:
 
   middleware:
     build:
-      context: ./middleware
+      context: ./middleware/api-gateway
       dockerfile: Dockerfile.dev
     ports:
       - "${MIDDLEWARE_PORT:-8085}:8080"
     environment:
       - PORT=8080
+    networks:
+      - edr-network
+
+  motion-detection:
+    build:
+      context: ./middleware/motion-detection
+      dockerfile: Dockerfile
+    ports:
+      - "${MOTION_PORT:-8083}:8080"
+    environment:
+      - BACKEND_URL=http://backend:8080
+      - CAMERAS=cam1,cam2
+      - IDLE_DROP=${IDLE_DROP:-5}
+      - ACTIVE_DROP=${ACTIVE_DROP:-1}
+      - COOLDOWN_FRAMES=${COOLDOWN_FRAMES:-30}
+    depends_on:
+      - backend
+    restart: always
     networks:
       - edr-network
 
