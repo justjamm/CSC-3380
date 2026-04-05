@@ -1,8 +1,11 @@
 #include "CameraProcessor.h"
 #include <httplib.h>
+#include <json.hpp>
 #include <chrono>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -40,10 +43,24 @@ int main() {
 
     auto camera_names = split(cameras_str, ',');
 
+    // Load camera-to-room mapping from zones.json
+    std::map<std::string, std::string> room_map;
+    std::ifstream zones_file("zones.json");
+    if (zones_file.is_open()) {
+        nlohmann::json j;
+        zones_file >> j;
+        for (auto& [cam, room] : j.items())
+            room_map[cam] = room.get<std::string>();
+        std::cout << "Loaded zones.json: " << room_map.size() << " room(s) mapped" << std::endl;
+    } else {
+        std::cerr << "Warning: zones.json not found, using camera IDs as room names" << std::endl;
+    }
+
     // Create and start processors
     std::vector<std::unique_ptr<CameraProcessor>> processors;
     for (const auto& name : camera_names) {
-        auto proc = std::make_unique<CameraProcessor>(name, backend_url,
+        std::string room = room_map.count(name) ? room_map[name] : name;
+        auto proc = std::make_unique<CameraProcessor>(name, backend_url, room,
                                                        idle_drop, active_drop, cooldown);
         proc->start();
         processors.push_back(std::move(proc));

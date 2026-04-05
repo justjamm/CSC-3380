@@ -12,6 +12,7 @@
 class CameraProcessor {
 public:
     CameraProcessor(const std::string& name, const std::string& backend_url,
+                    const std::string& room_name,
                     int idle_drop, int active_drop, int cooldown);
     ~CameraProcessor();
 
@@ -32,6 +33,7 @@ private:
 
     std::string name_;
     std::string url_;
+    std::string room_name_;
     int idle_drop_;
     int active_drop_;
     int cooldown_;

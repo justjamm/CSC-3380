@@ -4,9 +4,11 @@
 #include <opencv2/opencv.hpp>
 
 CameraProcessor::CameraProcessor(const std::string& name, const std::string& backend_url,
+                                 const std::string& room_name,
                                  int idle_drop, int active_drop, int cooldown)
     : name_(name)
     , url_(backend_url + "/mjpeg/" + name)
+    , room_name_(room_name)
     , idle_drop_(idle_drop)
     , active_drop_(active_drop)
     , cooldown_(cooldown) {}
@@ -83,6 +85,7 @@ void CameraProcessor::run() {
         cv::Mat annotated = detector.process(frame, has_motion);
 
         // Update state machine
+        State prev_state = state;
         if (has_motion) {
             state = ACTIVE;
             idle_streak = 0;
@@ -91,6 +94,12 @@ void CameraProcessor::run() {
             if (idle_streak >= cooldown_) {
                 state = IDLE;
             }
+        }
+
+        if (prev_state == IDLE && state == ACTIVE) {
+            std::cout << "[" << name_ << "] Motion detected: object in " << room_name_ << std::endl;
+        } else if (prev_state == ACTIVE && state == IDLE) {
+            std::cout << "[" << name_ << "] Motion cleared: " << room_name_ << std::endl;
         }
 
         // Encode annotated frame back to JPEG

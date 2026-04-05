@@ -12,6 +12,7 @@ include_directories(
     ${OpenCV_INCLUDE_DIRS}
     ${CURL_INCLUDE_DIRS}
     third_party/cpp-httplib
+    third_party/nlohmann
 )
 
 add_subdirectory(src)
