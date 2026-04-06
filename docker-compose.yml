@@ -49,12 +49,11 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "${MIDDLEWARE_PORT:-8085}:8080"
-    env_file:
-      - ./middleware/.env
-    depends_on:
-      - backend
+    environment:
+      - PORT=8080
     networks:
       - edr-network
+  
 
   motion-detection:
     build:
@@ -73,7 +72,6 @@ services:
     restart: always
     networks:
       - edr-network
-  
 
   
 
