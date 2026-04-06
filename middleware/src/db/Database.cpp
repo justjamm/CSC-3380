@@ -1,5 +1,6 @@
-#include "middleware\include\db\Database.hpp"
+#include "db/Database.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <condition_variable>
 #include <mutex>

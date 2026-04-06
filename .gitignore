@@ -1,5 +1,7 @@
 # Build artifacts
 build/
+build-all/
+
 *.o
 *.exe
 *.out
@@ -23,7 +25,9 @@ node_modules/
 
 # Binaries
 rtsp_viewer
-
+# dev work
+contracts/
+tests/
 context.md
 fefw.md
 TASKS_BOARD.md

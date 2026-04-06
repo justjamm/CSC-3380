@@ -1,4 +1,4 @@
-#include "middleware\include\stream\StreamHandler.hpp"
+#include "stream/StreamHandler.hpp"
 
 #include <stdexcept>
 #include <utility>
