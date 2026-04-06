@@ -27,5 +27,12 @@ rtsp_viewer
 context.md
 fefw.md
 TASKS_BOARD.md
+
+# Middleware, # everyone MUST download their own httplib.h bc its big. curl command:
+# curl -o httplib.h https://raw.githubusercontent.com/yhirose/cpp-httplib/master/httplib.h  
+# Do this from \middleware\include
+middleware/include/httplib.h 
+middleware/build/
+middleware/.env
 tasks.json
 trello_sync.py
