@@ -34,3 +34,5 @@ TASKS_BOARD.md
 middleware/include/httplib.h 
 middleware/build/
 middleware/.env
+tasks.json
+trello_sync.py
