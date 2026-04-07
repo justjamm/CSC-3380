@@ -58,6 +58,8 @@ services:
       - PORT=8080
       - BACKEND_HOST=backend
       - BACKEND_PORT=8080
+      - STREAM_HOST=${STREAM_HOST:-motion-detection}
+      - STREAM_PORT=${STREAM_PORT:-8080}
       - JWT_SECRET=${JWT_SECRET:-middleware-dev-signing-secret}
     depends_on:
       - backend

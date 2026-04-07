@@ -49,6 +49,10 @@ int main() {
         .field("backend_host", cfg.backendHost)
         .field("backend_port", cfg.backendPort)
         .log();
+    Logger::info("Stream source target", "main")
+        .field("stream_host", cfg.streamHost)
+        .field("stream_port", cfg.streamPort)
+        .log();
 
     // ---- Step 4: Server initialisation ----
     Server server(cfg);

@@ -1,0 +1,32 @@
+"use client";
+
+import { motion } from "framer-motion";
+
+export default function CameraMapToggle({ isOpen, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="fixed bottom-[5vh] right-[5vw] z-30 flex h-12 w-12 items-center justify-center rounded-lg border border-green-700/50 bg-black/70 backdrop-blur-sm transition-colors hover:bg-green-900/40"
+    >
+      <motion.div
+        animate={{ rotate: isOpen ? 45 : 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* 2x2 grid icon */}
+          <rect x="1" y="1" width="7" height="7" rx="1" stroke="#00ff41" strokeWidth="1.5" />
+          <rect x="12" y="1" width="7" height="7" rx="1" stroke="#00ff41" strokeWidth="1.5" />
+          <rect x="1" y="12" width="7" height="7" rx="1" stroke="#00ff41" strokeWidth="1.5" />
+          <rect x="12" y="12" width="7" height="7" rx="1" stroke="#00ff41" strokeWidth="1.5" />
+        </svg>
+      </motion.div>
+    </button>
+  );
+}

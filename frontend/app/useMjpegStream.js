@@ -36,7 +36,7 @@ export default function useMjpegStream(cameraId, accessToken) {
         currentObjectUrl = nextObjectUrl;
         img.src = currentObjectUrl;
 
-        retryTimer = setTimeout(loadFrame, 900);
+        retryTimer = setTimeout(loadFrame, 200);
       } catch {
         if (!active) {
           return;

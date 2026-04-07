@@ -976,11 +976,11 @@ void App::registerStreamRoutes() {
                     .field("device_id", deviceId)
                     .log();
 
-                httplib::Client backend(m_cfg.backendHost, m_cfg.backendPort);
-                configureBackendClient(backend);
-                const auto upstream = backend.Get(("/stream/" + deviceId).c_str());
+                httplib::Client streamSource(m_cfg.streamHost, m_cfg.streamPort);
+                configureBackendClient(streamSource);
+                const auto upstream = streamSource.Get(("/stream/" + deviceId).c_str());
                 if (!upstream) {
-                    setBackendUnavailable(res, "Failed to query backend stream endpoint");
+                    setBackendUnavailable(res, "Failed to query stream source endpoint");
                     return;
                 }
 
@@ -1033,21 +1033,21 @@ void App::registerStreamRoutes() {
                     .field("device_id", deviceId)
                     .log();
 
-                const std::string backendHost = m_cfg.backendHost;
-                const int backendPort = m_cfg.backendPort;
-                const std::string backendPath = "/mjpeg/" + deviceId;
+                const std::string streamHost = m_cfg.streamHost;
+                const int streamPort = m_cfg.streamPort;
+                const std::string streamPath = "/mjpeg/" + deviceId;
 
                 res.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
                 res.set_header("Pragma", "no-cache");
                 res.set_chunked_content_provider(
                     "multipart/x-mixed-replace; boundary=frame",
-                    [backendHost, backendPort, backendPath](std::uint64_t /*offset*/,
-                                                            httplib::DataSink& sink) {
-                        httplib::Client backend(backendHost, backendPort);
-                        configureBackendClient(backend, 30);
+                    [streamHost, streamPort, streamPath](std::uint64_t /*offset*/,
+                                                          httplib::DataSink& sink) {
+                        httplib::Client streamSource(streamHost, streamPort);
+                        configureBackendClient(streamSource, 30);
 
-                        const auto upstream = backend.Get(
-                            backendPath.c_str(),
+                        const auto upstream = streamSource.Get(
+                            streamPath.c_str(),
                             [&](const char* data, std::size_t dataLength) {
                                 if (!sink.is_writable()) {
                                     return false;
@@ -1102,6 +1102,47 @@ void App::registerEdrRoutes() {
                         {"source", "backend"},
                         {"message", "Backend health check returned non-ready"},
                         {"upstreamStatus", upstream->status},
+                        {"active", true}
+                    });
+                }
+
+                httplib::Client streamSource(m_cfg.streamHost, m_cfg.streamPort);
+                configureBackendClient(streamSource);
+                const auto motionUpstream = streamSource.Get("/alerts?limit=50");
+                if (!motionUpstream) {
+                    alerts.push_back(Json{
+                        {"id", "motion-alert-source-unreachable"},
+                        {"severity", "warning"},
+                        {"source", "motion-detection"},
+                        {"message", "Motion alert source is unreachable"},
+                        {"active", true}
+                    });
+                } else if (motionUpstream->status == 200) {
+                    try {
+                        const auto motionPayload = Json::parse(motionUpstream->body);
+                        if (motionPayload.contains("alerts") && motionPayload["alerts"].is_array()) {
+                            for (const auto& alert : motionPayload["alerts"]) {
+                                if (alert.is_object()) {
+                                    alerts.push_back(alert);
+                                }
+                            }
+                        }
+                    } catch (...) {
+                        alerts.push_back(Json{
+                            {"id", "motion-alert-source-invalid-response"},
+                            {"severity", "warning"},
+                            {"source", "motion-detection"},
+                            {"message", "Motion alert source returned malformed JSON"},
+                            {"active", true}
+                        });
+                    }
+                } else if (motionUpstream->status != 404) {
+                    alerts.push_back(Json{
+                        {"id", "motion-alert-source-error"},
+                        {"severity", "warning"},
+                        {"source", "motion-detection"},
+                        {"message", "Motion alert source returned an unexpected status"},
+                        {"upstreamStatus", motionUpstream->status},
                         {"active", true}
                     });
                 }

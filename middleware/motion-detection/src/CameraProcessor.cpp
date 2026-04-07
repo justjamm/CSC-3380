@@ -3,6 +3,13 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
+namespace {
+std::int64_t nowEpochMillis() {
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+}
+}  // namespace
+
 CameraProcessor::CameraProcessor(const std::string& name, const std::string& backend_url,
                                  const std::string& room_name,
                                  int idle_drop, int active_drop, int cooldown)
@@ -34,9 +41,45 @@ std::vector<uint8_t> CameraProcessor::getLatestFrame() const {
     return latest_frame_;
 }
 
+std::vector<MotionAlert> CameraProcessor::getRecentAlerts(std::size_t limit) const {
+    std::lock_guard<std::mutex> lock(alerts_mutex_);
+    std::vector<MotionAlert> recent;
+    if (alerts_.empty() || limit == 0) {
+        return recent;
+    }
+
+    const std::size_t start = alerts_.size() > limit ? alerts_.size() - limit : 0;
+    recent.reserve(alerts_.size() - start);
+    for (std::size_t i = start; i < alerts_.size(); ++i) {
+        recent.push_back(alerts_[i]);
+    }
+    return recent;
+}
+
 bool CameraProcessor::hasFrames() const {
     std::lock_guard<std::mutex> lock(frame_mutex_);
     return !latest_frame_.empty();
+}
+
+void CameraProcessor::recordAlert(bool active, const std::string& message) {
+    std::lock_guard<std::mutex> lock(alerts_mutex_);
+
+    MotionAlert alert;
+    alert_seq_ += 1;
+    alert.id = "motion-" + name_ + "-" + std::to_string(alert_seq_);
+    alert.severity = active ? "high" : "info";
+    alert.source = "motion-detection";
+    alert.message = message;
+    alert.cameraId = name_;
+    alert.room = room_name_;
+    alert.state = active ? "active" : "cleared";
+    alert.timestampMs = nowEpochMillis();
+    alert.active = active;
+
+    alerts_.push_back(std::move(alert));
+    while (alerts_.size() > kMaxAlertHistory) {
+        alerts_.pop_front();
+    }
 }
 
 void CameraProcessor::run() {
@@ -97,9 +140,13 @@ void CameraProcessor::run() {
         }
 
         if (prev_state == IDLE && state == ACTIVE) {
-            std::cout << "[" << name_ << "] Motion detected: object in " << room_name_ << std::endl;
+            const std::string message = "Motion detected in " + room_name_;
+            std::cout << "[" << name_ << "] " << message << std::endl;
+            recordAlert(true, message);
         } else if (prev_state == ACTIVE && state == IDLE) {
-            std::cout << "[" << name_ << "] Motion cleared: " << room_name_ << std::endl;
+            const std::string message = "Motion cleared in " + room_name_;
+            std::cout << "[" << name_ << "] " << message << std::endl;
+            recordAlert(false, message);
         }
 
         // Encode annotated frame back to JPEG

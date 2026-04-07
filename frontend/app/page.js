@@ -1,9 +1,15 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence } from "framer-motion";
 import ProtectedRoute from "./components/ProtectedRoute";
+import VideoViewport from "./components/VideoViewport";
+import StatusBar from "./components/StatusBar";
+import AlertsOverlay from "./components/AlertsOverlay";
+import LogoutButton from "./components/LogoutButton";
+import CameraMapToggle from "./components/CameraMapToggle";
+import CameraMapPanel from "./components/CameraMapPanel";
 import {
   getAlerts,
   getDevices,
@@ -24,6 +30,7 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [wsStatus, setWsStatus] = useState("offline");
   const [lastRealtimeAt, setLastRealtimeAt] = useState(0);
+  const [isMapOpen, setIsMapOpen] = useState(false);
   const reconnectAttemptRef = useRef(0);
   const selectedCameraRef = useRef("");
 
@@ -102,6 +109,42 @@ function DashboardPage() {
       return;
     }
 
+    let active = true;
+    let pollTimer = null;
+
+    const pollAlerts = async () => {
+      try {
+        const alertsResponse = await getAlerts(accessToken);
+        if (!active) {
+          return;
+        }
+        if (Array.isArray(alertsResponse?.alerts)) {
+          setAlerts(alertsResponse.alerts);
+        }
+      } catch {
+        // Keep polling even if a refresh attempt fails.
+      }
+
+      if (active) {
+        pollTimer = setTimeout(pollAlerts, 3000);
+      }
+    };
+
+    pollTimer = setTimeout(pollAlerts, 3000);
+
+    return () => {
+      active = false;
+      if (pollTimer) {
+        clearTimeout(pollTimer);
+      }
+    };
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (!accessToken) {
+      return;
+    }
+
     let socket = null;
     let reconnectTimer = null;
     let stopped = false;
@@ -121,6 +164,14 @@ function DashboardPage() {
       if (type === "device_update") {
         if (Array.isArray(data.devices)) {
           setDevices(data.devices);
+          // Safety net: if no camera selected yet and devices arrived, pick the first one.
+          if (!selectedCameraRef.current && data.devices.length > 0) {
+            const fallbackId = data.devices[0].id;
+            setSelectedCamera(fallbackId);
+            selectCamera(fallbackId, accessToken).catch((err) => {
+              setError(err.message || "Failed to select default camera");
+            });
+          }
         }
         if (typeof data.selectedCameraId === "string" && data.selectedCameraId) {
           setSelectedCamera(data.selectedCameraId);
@@ -207,13 +258,12 @@ function DashboardPage() {
     };
   }, [accessToken]);
 
-  const onCameraChange = async (event) => {
-    const nextCameraId = event.target.value;
-    setSelectedCamera(nextCameraId);
+  const onCameraChange = async (cameraId) => {
+    setSelectedCamera(cameraId);
     setError("");
 
     try {
-      await selectCamera(nextCameraId, accessToken);
+      await selectCamera(cameraId, accessToken);
     } catch (err) {
       setError(err.message || "Failed to select camera");
     }
@@ -225,73 +275,38 @@ function DashboardPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-8">
-      <div className="mb-6 flex w-full max-w-4xl items-center justify-between">
-        <h1 className="text-3xl font-bold">IoT EDR Hub</h1>
-        <button
-          type="button"
-          onClick={onLogout}
-          className="rounded-md border border-gray-600 px-3 py-1 text-sm"
-        >
-          Logout
-        </button>
-      </div>
+    <>
+      <VideoViewport
+        imgRef={imgRef}
+        selectedCamera={selectedCamera}
+        loading={loading}
+      />
 
-      <div className="mb-3 flex w-full max-w-4xl items-center justify-between text-xs text-gray-300">
-        <p>Realtime: {displayWsStatus}</p>
-        <p>
-          Last update: {lastRealtimeAt ? new Date(lastRealtimeAt).toLocaleTimeString() : "waiting"}
-        </p>
-      </div>
+      <StatusBar
+        wsStatus={displayWsStatus}
+        lastRealtimeAt={lastRealtimeAt}
+        error={error}
+      />
 
-      {error ? <p className="mb-4 w-full max-w-4xl text-sm text-red-400">{error}</p> : null}
+      <AlertsOverlay alerts={alerts} />
 
-      <div className="grid w-full max-w-4xl gap-6 md:grid-cols-[2fr_1fr]">
-        <section className="rounded-lg border border-gray-700 p-4">
-          <h2 className="mb-3 text-lg font-medium">Camera Stream</h2>
-          {loading ? <p className="mb-3 text-sm text-gray-300">Loading devices...</p> : null}
-          <select
-            value={selectedCamera}
-            onChange={onCameraChange}
-            disabled={devices.length === 0}
-            className="mb-4 w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
-          >
-            {devices.length === 0 ? (
-              <option value="">No devices</option>
-            ) : (
-              devices.map((device) => (
-                <option key={device.id} value={device.id}>
-                  {device.label || device.id}
-                </option>
-              ))
-            )}
-          </select>
+      <LogoutButton onLogout={onLogout} />
 
-          <img
-            ref={imgRef}
-            alt="Camera Stream"
-            className="w-full rounded-lg border border-gray-700"
+      <CameraMapToggle
+        isOpen={isMapOpen}
+        onToggle={() => setIsMapOpen((prev) => !prev)}
+      />
+
+      <AnimatePresence>
+        {isMapOpen && (
+          <CameraMapPanel
+            devices={devices}
+            selectedCamera={selectedCamera}
+            onCameraSelect={onCameraChange}
           />
-        </section>
-
-        <aside className="rounded-lg border border-gray-700 p-4">
-          <h2 className="mb-3 text-lg font-medium">Alerts</h2>
-          {alerts.length === 0 ? (
-            <p className="text-sm text-gray-300">No active alerts.</p>
-          ) : (
-            <ul className="space-y-3">
-              {alerts.map((alert) => (
-                <li key={alert.id} className="rounded-md border border-gray-700 p-2 text-sm">
-                  <p className="font-medium">{alert.id}</p>
-                  <p className="text-xs uppercase text-yellow-300">{alert.severity || "info"}</p>
-                  <p className="text-xs text-gray-300">{alert.message}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </aside>
-      </div>
-    </main>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
