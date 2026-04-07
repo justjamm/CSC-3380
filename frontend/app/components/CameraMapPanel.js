@@ -17,8 +17,30 @@ const ANCHOR_POSITIONS = [
   { x: 78, y: 78 },
 ];
 
+// Frontend-only camera label overrides.
+// Update these values to rename cameras in the map panel UI.
+const CAMERA_LABEL_OVERRIDES = {
+  cam1: "Living Room",
+  cam2: "Pantry",
+};
+
+function formatCameraId(id) {
+  if (!id) return "";
+
+  return id
+    .replace(/[_-]+/g, " ")
+    .replace(/([a-zA-Z])(\d+)/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b[a-z]/g, (ch) => ch.toUpperCase());
+}
+
+function getCameraLabel(device) {
+  return CAMERA_LABEL_OVERRIDES[device.id] || formatCameraId(device.label || device.id);
+}
+
 function CameraNode({ device, position, isSelected, onSelect }) {
-  const label = device.label || device.id;
+  const label = getCameraLabel(device);
   const displayLabel = label.length > 10 ? `${label.slice(0, 10)}...` : label;
 
   return (
