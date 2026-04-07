@@ -20,7 +20,7 @@ const ANCHOR_POSITIONS = [
 // Frontend-only camera label overrides.
 // Update these values to rename cameras in the map panel UI.
 const CAMERA_LABEL_OVERRIDES = {
-  cam1: "Living Room",
+  cam1: "Main",
   cam2: "Pantry",
 };
 
