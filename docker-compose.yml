@@ -5,6 +5,8 @@ services:
       - "27018:27017"
     volumes: 
       - mongo_data:/data/db
+    networks:
+      - edr-network
   frontend:
     build:
       context: ./frontend
@@ -64,8 +66,24 @@ services:
     depends_on:
       - backend
       - motion-detection
+      - auth-service
     networks:
       - edr-network
+  
+  auth-service:
+      build:
+        context: ./middleware/auth-service
+        dockerfile: Dockerfile.dev
+      expose:
+        - "3002"
+      environment:
+        - MONGO_URI=mongodb://mongo:27017/edr
+        - JWT_SECRET=${JWT_SECRET:-middleware-dev-signing-secret}
+        - OTP_EXPIRY_SECS=${OTP_EXPIRY_SECS:-300}
+      depends_on:
+        - mongo
+      networks:
+        - edr-network
   
 
   motion-detection:

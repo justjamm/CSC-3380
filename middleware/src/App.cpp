@@ -48,6 +48,8 @@ constexpr std::string_view kDevicesLatestKey = "devices.latest";
 constexpr std::string_view kAlertsLatestKey = "alerts.latest";
 constexpr std::string_view kRealtimePath = "/ws";
 constexpr std::string_view kDevelopmentOtp = "123456";
+constexpr std::string_view kAuthServiceHost = "auth-service";
+constexpr int kAuthServicePort = 3002;
 constexpr std::int64_t kPendingOtpLifetimeSecs = 300;
 constexpr std::int64_t kRealtimeHeartbeatIntervalSecs = 15;
 
@@ -130,10 +132,6 @@ private:
     return cfg;
 }
 
-[[nodiscard]] std::string buildPendingKey(std::string_view username,
-                                          std::string_view suffix) {
-    return std::string(kPendingAuthPrefix) + std::string(username) + "." + std::string(suffix);
-}
 
 [[nodiscard]] std::int64_t nowEpochSeconds() {
     using namespace std::chrono;
@@ -181,21 +179,6 @@ template <typename T>
     } catch (const std::bad_any_cast&) {
         return std::nullopt;
     }
-}
-
-void clearPendingAuth(middleware::state::StateHandler& stateHandler,
-                      std::string_view username) {
-    stateHandler.remove(buildPendingKey(username, "otp"));
-    stateHandler.remove(buildPendingKey(username, "role"));
-    stateHandler.remove(buildPendingKey(username, "expires_at"));
-}
-
-[[nodiscard]] std::string deriveUserRole(std::string_view username) {
-    return username == "admin" ? "admin" : "operator";
-}
-
-[[nodiscard]] bool isCredentialAccepted(const middleware::input::LoginRequest& request) {
-    return !request.username.empty() && !request.password.empty();
 }
 
 void configureBackendClient(httplib::Client& client, int readTimeoutSeconds = 5) {
@@ -674,157 +657,49 @@ void App::registerHealthRoutes() {
 // ============================================================
 
 void App::registerAuthRoutes() {
-    // POST /auth/login
-    // Receives: {"username":"...","password":"..."}
-    // Returns:  {"status":"otp_required","username":"...","otp":"123456"}
-    m_http->Post("/auth/login", [this](const httplib::Request& req,
-                                       httplib::Response& res) {
-        ErrorHandler::handle(
-            "POST /auth/login",
-            [&]() {
-                Logger::info("Login attempt", "auth").log();
-
-                auto loginRequest = m_inputHandler.parseLogin(req.body);
-                if (!loginRequest) {
-                    res.status = 400;
-                    res.set_content(
-                        Json{
-                            {"error", "invalid_request"},
-                            {"message", inputErrorMessage(loginRequest.error())}
-                        }.dump(),
-                        "application/json");
-                    return;
-                }
-
-                if (!isCredentialAccepted(*loginRequest)) {
-                    res.status = 401;
-                    res.set_content(
-                        Json{
-                            {"error", "invalid_credentials"},
-                            {"message", "Username or password was rejected"}
-                        }.dump(),
-                        "application/json");
-                    return;
-                }
-
-                const auto expiresAt = nowEpochSeconds() + kPendingOtpLifetimeSecs;
-                const auto role = deriveUserRole(loginRequest->username);
-                m_stateHandler.set(
-                    buildPendingKey(loginRequest->username, "otp"),
-                    std::string(kDevelopmentOtp),
-                    middleware::state::StateScope::Session);
-                m_stateHandler.set(
-                    buildPendingKey(loginRequest->username, "role"),
-                    role,
-                    middleware::state::StateScope::Session);
-                m_stateHandler.set(
-                    buildPendingKey(loginRequest->username, "expires_at"),
-                    expiresAt,
-                    middleware::state::StateScope::Session);
-
-                res.status = 200;
+    // Forward POST /auth/login to auth-service (Node/MongoDB)
+    m_http->Post("/auth/login", [](const httplib::Request& req, httplib::Response& res) {
+        ErrorHandler::handle("POST /auth/login", [&]() {
+            httplib::Client authClient(std::string(kAuthServiceHost), kAuthServicePort);
+            configureBackendClient(authClient);
+            auto result = authClient.Post("/auth/login", req.body, "application/json");
+            if (!result) {
+                res.status = 502;
                 res.set_content(
-                    Json{
-                        {"status", "otp_required"},
-                        {"username", loginRequest->username},
-                        {"otp", kDevelopmentOtp},
-                        {"expiresInSeconds", kPendingOtpLifetimeSecs}
-                    }.dump(),
+                    Json{{"error", "auth_service_unavailable"},
+                         {"message", "Could not reach auth service"}}.dump(),
                     "application/json");
-            },
-            [&](int code, const std::string& body) {
-                res.status = code;
-                res.set_content(body, "application/json");
-            });
+                return;
+            }
+            res.status = result->status;
+            res.set_content(result->body, "application/json");
+        }, [&](int code, const std::string& body) {
+            res.status = code;
+            res.set_content(body, "application/json");
+        });
     });
 
-    // POST /auth/verify-otp
-    // Receives: {"username":"...","otp":"..."}
-    // Returns:  {"token":"<jwt>","tokenType":"Bearer"}
-    m_http->Post("/auth/verify-otp", [this](const httplib::Request& req,
-                                            httplib::Response& res) {
-        ErrorHandler::handle(
-            "POST /auth/verify-otp",
-            [&]() {
-                Logger::info("OTP verification attempt", "auth").log();
-
-                auto otpRequest = m_inputHandler.parseOtpVerify(req.body);
-                if (!otpRequest) {
-                    res.status = 400;
-                    res.set_content(
-                        Json{
-                            {"error", "invalid_request"},
-                            {"message", inputErrorMessage(otpRequest.error())}
-                        }.dump(),
-                        "application/json");
-                    return;
-                }
-
-                const auto otpKey = buildPendingKey(otpRequest->username, "otp");
-                const auto roleKey = buildPendingKey(otpRequest->username, "role");
-                const auto expiresAtKey = buildPendingKey(otpRequest->username, "expires_at");
-
-                const auto expectedOtp = getStateValue<std::string>(m_stateHandler, otpKey);
-                const auto role = getStateValue<std::string>(m_stateHandler, roleKey);
-                const auto expiresAt = getStateValue<std::int64_t>(m_stateHandler, expiresAtKey);
-
-                if (!expectedOtp.has_value() || !expiresAt.has_value()) {
-                    res.status = 401;
-                    res.set_content(
-                        Json{
-                            {"error", "otp_session_missing"},
-                            {"message", "No active login challenge. Call /auth/login first."}
-                        }.dump(),
-                        "application/json");
-                    return;
-                }
-
-                if (nowEpochSeconds() > *expiresAt) {
-                    clearPendingAuth(m_stateHandler, otpRequest->username);
-                    res.status = 401;
-                    res.set_content(
-                        Json{
-                            {"error", "otp_expired"},
-                            {"message", "OTP challenge expired. Call /auth/login again."}
-                        }.dump(),
-                        "application/json");
-                    return;
-                }
-
-                if (otpRequest->otp != *expectedOtp) {
-                    res.status = 401;
-                    res.set_content(
-                        Json{
-                            {"error", "otp_invalid"},
-                            {"message", "OTP is invalid"}
-                        }.dump(),
-                        "application/json");
-                    return;
-                }
-
-                const auto tokens = m_authenticator.issue(
-                    otpRequest->username,
-                    role.value_or("operator"));
-                clearPendingAuth(m_stateHandler, otpRequest->username);
-
-                res.status = 200;
+    // Forward POST /auth/verify-otp to auth-service
+    m_http->Post("/auth/verify-otp", [](const httplib::Request& req, httplib::Response& res) {
+        ErrorHandler::handle("POST /auth/verify-otp", [&]() {
+            httplib::Client authClient(std::string(kAuthServiceHost), kAuthServicePort);
+            configureBackendClient(authClient);
+            auto result = authClient.Post("/auth/verify-otp", req.body, "application/json");
+            if (!result) {
+                res.status = 502;
                 res.set_content(
-                    Json{
-                        {"status", "ok"},
-                        {"tokenType", "Bearer"},
-                        {"token", tokens.accessToken},
-                        {"accessToken", tokens.accessToken},
-                        {"refreshToken", tokens.refreshToken}
-                    }.dump(),
+                    Json{{"error", "auth_service_unavailable"},
+                         {"message", "Could not reach auth service"}}.dump(),
                     "application/json");
-            },
-            [&](int code, const std::string& body) {
-                res.status = code;
-                res.set_content(body, "application/json");
-            });
+                return;
+            }
+            res.status = result->status;
+            res.set_content(result->body, "application/json");
+        }, [&](int code, const std::string& body) {
+            res.status = code;
+            res.set_content(body, "application/json");
+        });
     });
-
-    Logger::debug("Auth routes registered: POST /auth/login, POST /auth/verify-otp", "app").log();
 }
 
 // ============================================================
