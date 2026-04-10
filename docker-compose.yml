@@ -40,6 +40,7 @@ services:
     environment:
       - MTX_PATHS_CAM_SOURCE=rtsp://${RTSP_USER}:${RTSP_PASS}@${RTSP_HOST}:${RTSP_PORT}/${RTSP_PATH}
       - MTX_PATHS_CAM2_SOURCE=rtsp://${RTSP_USER}:${RTSP_PASS}@${RTSP_HOST_2}:${RTSP_PORT}/${RTSP_PATH}
+      - MTX_PATHS_CAM3_SOURCE=rtsp://${RTSP_USER}:${RTSP_PASS}@${RTSP_HOST_3}:${RTSP_PORT}/${RTSP_PATH}
     networks:
       - edr-network
 
@@ -94,7 +95,7 @@ services:
       - "8080"
     environment:
       - BACKEND_URL=http://backend:8080
-      - CAMERAS=cam1,cam2
+      - CAMERAS=cam1,cam2,cam3
       - IDLE_DROP=${IDLE_DROP:-5}
       - ACTIVE_DROP=${ACTIVE_DROP:-1}
       - COOLDOWN_FRAMES=${COOLDOWN_FRAMES:-30}
@@ -115,6 +116,7 @@ services:
     environment:
       - RTSP_INPUT_URL=${RTSP_INPUT_URL:-rtsp://mediamtx:8554/cam}
       - RTSP_INPUT_URL_2=${RTSP_INPUT_URL_2:-rtsp://mediamtx:8554/cam2}
+      - RTSP_INPUT_URL_3=${RTSP_INPUT_URL_3:-rtsp://mediamtx:8554/cam3}
     depends_on:
       - mediamtx
     restart: always

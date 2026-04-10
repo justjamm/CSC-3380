@@ -71,7 +71,7 @@ int main() {
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
     std::string backend_url = getEnv("BACKEND_URL", "http://backend:8080");
-    std::string cameras_str = getEnv("CAMERAS", "cam1,cam2");
+    std::string cameras_str = getEnv("CAMERAS", "cam1,cam2,cam3");
     int idle_drop = getEnvInt("IDLE_DROP", 5);
     int active_drop = getEnvInt("ACTIVE_DROP", 1);
     int cooldown = getEnvInt("COOLDOWN_FRAMES", 30);

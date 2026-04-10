@@ -30,6 +30,7 @@ export default function LoginPage() {
       const response = await login(username.trim(), password);
       startOtpFlow(username.trim());
       setOtpHint(response?.otp || "");
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       router.push("/verify-otp");
     } catch (err) {
       setError(err.message || "Login failed");

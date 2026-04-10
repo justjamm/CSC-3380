@@ -8,13 +8,8 @@ import { motion } from "framer-motion";
 const ANCHOR_POSITIONS = [
   { x: 5, y: 90 },
   { x: 50, y: 20 },
-  { x: 80, y: 25 },
-  { x: 18, y: 52 },
-  { x: 50, y: 50 },
-  { x: 82, y: 52 },
-  { x: 22, y: 78 },
-  { x: 50, y: 80 },
-  { x: 78, y: 78 },
+  { x: 5, y: 45 }
+  // Add more positions here if you have more cameras to place
 ];
 
 // Frontend-only camera label overrides.
@@ -22,6 +17,7 @@ const ANCHOR_POSITIONS = [
 const CAMERA_LABEL_OVERRIDES = {
   cam1: "Main",
   cam2: "Pantry",
+  cam3: "Hall"
 };
 
 function formatCameraId(id) {

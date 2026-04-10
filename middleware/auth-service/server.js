@@ -10,6 +10,8 @@ app.use(express.json());
 const PORT = process.env.PORT || 3002;
 const MONGO_URI = process.env.MONGO_URI || "mongodb://mongo:27017/edr";
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
+const JWT_ISSUER = process.env.JWT_ISSUER || "middleware";
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE || "frontend";
 const OTP_EXPIRY_SECS = parseInt(process.env.OTP_EXPIRY_SECS || "300", 10);
 
 mongoose.connect(MONGO_URI).then(async () => {
@@ -74,11 +76,23 @@ app.post("/auth/verify-otp", async (req, res) => {
 
     const accessToken = jwt.sign(
       { userId: user._id.toString(), username: user.username, role: user.role },
-      JWT_SECRET, { expiresIn: "15m" }
+      JWT_SECRET,
+      {
+        expiresIn: "15m",
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+        subject: user._id.toString(),
+      }
     );
     const refreshToken = jwt.sign(
       { userId: user._id.toString(), type: "refresh" },
-      JWT_SECRET, { expiresIn: "1d" }
+      JWT_SECRET,
+      {
+        expiresIn: "1d",
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+        subject: user._id.toString(),
+      }
     );
     return res.json({ accessToken, refreshToken });
   } catch (err) {
