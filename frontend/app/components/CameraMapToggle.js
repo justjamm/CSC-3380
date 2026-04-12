@@ -7,7 +7,8 @@ export default function CameraMapToggle({ isOpen, onToggle }) {
     <button
       type="button"
       onClick={onToggle}
-      className="fixed bottom-[5vh] right-[5vw] z-30 flex h-12 w-12 items-center justify-center rounded-lg border border-green-700/50 bg-black/70 backdrop-blur-sm transition-colors hover:bg-green-900/40"
+      className="fixed right-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-30 flex h-12 w-12 items-center justify-center rounded-lg border border-green-700/50 bg-black/70 backdrop-blur-sm transition-colors hover:bg-green-900/40 sm:right-[5vw] sm:bottom-[5vh]"
+      aria-label={isOpen ? "Close camera map" : "Open camera map"}
     >
       <motion.div
         animate={{ rotate: isOpen ? 45 : 0 }}

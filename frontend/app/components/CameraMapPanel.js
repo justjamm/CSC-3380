@@ -51,13 +51,13 @@ function CameraNode({ device, position, isSelected, onSelect }) {
         <motion.span
           animate={{ scale: [1, 1.4, 1], opacity: [0.8, 0.2, 0.8] }}
           transition={{ duration: 2, repeat: Infinity }}
-          className="absolute h-5 w-5 rounded-full border border-green-400"
+          className="absolute h-4 w-4 rounded-full border border-green-400 sm:h-5 sm:w-5"
         />
       )}
 
       {/* Node dot */}
       <span
-        className={`h-3 w-3 rounded-full border transition-colors ${
+        className={`h-2.5 w-2.5 rounded-full border transition-colors sm:h-3 sm:w-3 ${
           isSelected
             ? "border-green-300 bg-green-400 shadow-[0_0_8px_rgba(0,255,65,0.8)]"
             : "border-green-600 bg-green-900 group-hover:bg-green-700"
@@ -66,7 +66,7 @@ function CameraNode({ device, position, isSelected, onSelect }) {
 
       {/* Label */}
       <span
-        className={`mt-1 whitespace-nowrap rounded bg-black/70 px-1 py-[1px] font-mono text-[9px] tracking-wide backdrop-blur-sm ${
+        className={`mt-1 whitespace-nowrap rounded bg-black/70 px-1 py-[1px] font-mono text-[8px] tracking-wide backdrop-blur-sm sm:text-[9px] ${
           isSelected ? "text-glow-green text-green-300" : "text-green-600 group-hover:text-green-400"
         }`}
       >
@@ -83,11 +83,11 @@ export default function CameraMapPanel({ devices, selectedCamera, onCameraSelect
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 40, scale: 0.95 }}
       transition={{ type: "spring", damping: 25, stiffness: 300 }}
-      className="fixed bottom-[calc(5vh+3.5rem)] right-[5vw] z-20 w-[40vw] min-w-[400px] max-w-[640px] overflow-hidden rounded-xl border border-green-800/40 bg-gray-950/90 backdrop-blur-md"
+      className="fixed right-3 bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] left-3 z-20 max-h-[62vh] overflow-hidden rounded-xl border border-green-800/40 bg-gray-950/90 backdrop-blur-md sm:right-[5vw] sm:bottom-[calc(5vh+3.5rem)] sm:left-auto sm:max-h-none sm:w-[40vw] sm:min-w-[400px] sm:max-w-[640px]"
     >
       {/* Title bar */}
       <div className="border-b border-green-800/40 px-3 py-2">
-        <p className="text-glow-green text-center font-mono text-xs uppercase tracking-[0.3em] text-green-400">
+        <p className="text-glow-green text-center font-mono text-[11px] uppercase tracking-[0.2em] text-green-400 sm:text-xs sm:tracking-[0.3em]">
           Camera System
         </p>
       </div>

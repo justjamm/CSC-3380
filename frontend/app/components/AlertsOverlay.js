@@ -17,13 +17,13 @@ function getSeverityBorder(severity) {
 
 export default function AlertsOverlay({ alerts }) {
   return (
-    <div className="hud-scrollbar fixed top-[5vh] right-[5vw] z-20 max-h-[60vh] w-72 overflow-y-auto rounded-lg bg-black/60 p-3 backdrop-blur-sm">
-      <h2 className="text-glow-green mb-2 font-mono text-sm uppercase tracking-widest text-green-400">
+    <div className="hud-scrollbar fixed top-[calc(env(safe-area-inset-top)+5.75rem)] right-3 left-3 z-20 max-h-[32vh] overflow-y-auto rounded-lg bg-black/60 p-2.5 backdrop-blur-sm sm:top-[5vh] sm:right-[5vw] sm:left-auto sm:max-h-[60vh] sm:w-72 sm:p-3">
+      <h2 className="text-glow-green mb-2 font-mono text-xs uppercase tracking-widest text-green-400 sm:text-sm">
         Alerts
       </h2>
 
       {alerts.length === 0 ? (
-        <p className="font-mono text-xs text-gray-500">NO ACTIVE ALERTS</p>
+        <p className="font-mono text-[11px] text-gray-500 sm:text-xs">NO ACTIVE ALERTS</p>
       ) : (
         <AnimatePresence initial={false}>
           {alerts.map((alert) => (
@@ -35,13 +35,13 @@ export default function AlertsOverlay({ alerts }) {
               transition={{ duration: 0.2 }}
               className={`mb-2 border-l-2 ${getSeverityBorder(alert.severity)} pl-2`}
             >
-              <p className="font-mono text-xs font-medium text-green-300">
+              <p className="font-mono text-[11px] font-medium text-green-300 sm:text-xs">
                 {alert.id}
               </p>
-              <p className="font-mono text-xs uppercase text-yellow-300">
+              <p className="font-mono text-[11px] uppercase text-yellow-300 sm:text-xs">
                 {alert.severity || "info"}
               </p>
-              <p className="font-mono text-xs text-gray-400">
+              <p className="font-mono text-[11px] text-gray-400 sm:text-xs">
                 {alert.message}
               </p>
             </motion.div>

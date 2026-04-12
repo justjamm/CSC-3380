@@ -4,7 +4,7 @@
 export default function VideoViewport({ imgRef, selectedCamera, loading }) {
   return (
     <div className="fixed inset-0 z-0 bg-black">
-      <div className="relative mx-[5vw] my-[5vh] h-[90vh] w-[90vw] overflow-hidden rounded-lg border border-gray-800 bg-black">
+      <div className="relative m-2 h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] overflow-hidden rounded-md border border-gray-800 bg-black sm:mx-[5vw] sm:my-[5vh] sm:h-[90vh] sm:w-[90vw] sm:rounded-lg">
         <img
           ref={imgRef}
           alt={`Camera stream – ${selectedCamera || "none"}`}
