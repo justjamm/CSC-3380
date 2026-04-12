@@ -80,17 +80,24 @@ async function request(path, options = {}) {
   }
 }
 
-export function login(username, password) {
-  return request("/auth/login", {
+export function register(email, password) {
+  return request("/auth/register", {
     method: "POST",
-    body: { username, password },
+    body: { email, password },
   });
 }
 
-export function verifyOtp(username, otp) {
+export function login(email, password) {
+  return request("/auth/login", {
+    method: "POST",
+    body: { email, password },
+  });
+}
+
+export function verifyOtp(email, otp) {
   return request("/auth/verify-otp", {
     method: "POST",
-    body: { username, otp },
+    body: { email, otp },
   });
 }
 

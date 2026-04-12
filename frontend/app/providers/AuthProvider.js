@@ -4,30 +4,30 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 const ACCESS_TOKEN_KEY = "auth.accessToken";
 const REFRESH_TOKEN_KEY = "auth.refreshToken";
-const PENDING_USERNAME_KEY = "auth.pendingUsername";
+const PENDING_EMAIL_KEY = "auth.pendingEmail";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [accessToken, setAccessToken] = useState(null);
   const [refreshToken, setRefreshToken] = useState(null);
-  const [pendingUsername, setPendingUsername] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const savedAccessToken = window.localStorage.getItem(ACCESS_TOKEN_KEY);
     const savedRefreshToken = window.localStorage.getItem(REFRESH_TOKEN_KEY);
-    const savedPendingUsername = window.localStorage.getItem(PENDING_USERNAME_KEY);
+    const savedPendingEmail = window.localStorage.getItem(PENDING_EMAIL_KEY);
 
     setAccessToken(savedAccessToken || null);
     setRefreshToken(savedRefreshToken || null);
-    setPendingUsername(savedPendingUsername || "");
+    setPendingEmail(savedPendingEmail || "");
     setIsLoading(false);
   }, []);
 
-  const startOtpFlow = (username) => {
-    setPendingUsername(username);
-    window.localStorage.setItem(PENDING_USERNAME_KEY, username);
+  const startOtpFlow = (email) => {
+    setPendingEmail(email);
+    window.localStorage.setItem(PENDING_EMAIL_KEY, email);
   };
 
   const completeAuth = ({ token, accessToken: nextAccessToken, refreshToken: nextRefreshToken }) => {
@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
 
     setAccessToken(resolvedAccessToken);
     setRefreshToken(resolvedRefreshToken);
-    setPendingUsername("");
+    setPendingEmail("");
 
     if (resolvedAccessToken) {
       window.localStorage.setItem(ACCESS_TOKEN_KEY, resolvedAccessToken);
@@ -50,30 +50,30 @@ export function AuthProvider({ children }) {
       window.localStorage.removeItem(REFRESH_TOKEN_KEY);
     }
 
-    window.localStorage.removeItem(PENDING_USERNAME_KEY);
+    window.localStorage.removeItem(PENDING_EMAIL_KEY);
   };
 
   const logout = () => {
     setAccessToken(null);
     setRefreshToken(null);
-    setPendingUsername("");
+    setPendingEmail("");
     window.localStorage.removeItem(ACCESS_TOKEN_KEY);
     window.localStorage.removeItem(REFRESH_TOKEN_KEY);
-    window.localStorage.removeItem(PENDING_USERNAME_KEY);
+    window.localStorage.removeItem(PENDING_EMAIL_KEY);
   };
 
   const value = useMemo(
     () => ({
       accessToken,
       refreshToken,
-      pendingUsername,
+      pendingEmail,
       isLoading,
       isAuthenticated: Boolean(accessToken),
       startOtpFlow,
       completeAuth,
       logout,
     }),
-    [accessToken, refreshToken, pendingUsername, isLoading]
+    [accessToken, refreshToken, pendingEmail, isLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

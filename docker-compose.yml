@@ -81,6 +81,8 @@ services:
         - MONGO_URI=mongodb://mongo:27017/edr
         - JWT_SECRET=${JWT_SECRET:-middleware-dev-signing-secret}
         - OTP_EXPIRY_SECS=${OTP_EXPIRY_SECS:-300}
+        - EMAIL_USER=${EMAIL_USER}
+        - EMAIL_PASS=${EMAIL_PASS}
       depends_on:
         - mongo
       networks:

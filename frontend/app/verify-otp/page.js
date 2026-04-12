@@ -7,7 +7,7 @@ import { useAuth } from "../providers/AuthProvider";
 
 export default function VerifyOtpPage() {
   const router = useRouter();
-  const { pendingUsername, completeAuth, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { pendingEmail, completeAuth, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
@@ -19,10 +19,10 @@ export default function VerifyOtpPage() {
       return;
     }
 
-    if (!authLoading && !pendingUsername) {
+    if (!authLoading && !pendingEmail) {
       router.replace("/login");
     }
-  }, [authLoading, isAuthenticated, pendingUsername, router]);
+  }, [authLoading, isAuthenticated, pendingEmail, router]);
 
   const onSubmit = async (event) => {
     event.preventDefault();
@@ -30,7 +30,7 @@ export default function VerifyOtpPage() {
     setSubmitting(true);
 
     try {
-      const response = await verifyOtp(pendingUsername, otp.trim());
+      const response = await verifyOtp(pendingEmail, otp.trim());
       completeAuth(response);
       router.replace("/");
     } catch (err) {
@@ -43,7 +43,7 @@ export default function VerifyOtpPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
       <h1 className="mb-2 text-2xl font-semibold">Verify OTP</h1>
-      <p className="mb-6 text-sm text-gray-300">Enter the OTP for {pendingUsername || "your account"}.</p>
+      <p className="mb-6 text-sm text-gray-300">Enter the OTP sent to {pendingEmail || "your email"}.</p>
 
       <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-gray-700 bg-black/30 p-5">
         <label className="block text-sm">

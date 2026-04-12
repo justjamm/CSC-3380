@@ -14,38 +14,94 @@ const JWT_ISSUER = process.env.JWT_ISSUER || "middleware";
 const JWT_AUDIENCE = process.env.JWT_AUDIENCE || "frontend";
 const OTP_EXPIRY_SECS = parseInt(process.env.OTP_EXPIRY_SECS || "300", 10);
 
+// Simple email format validator
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 mongoose.connect(MONGO_URI).then(async () => {
   console.log("[auth-service] Connected to MongoDB");
   // Seed a default admin if the users collection is empty
   const count = await User.countDocuments();
   if (count === 0) {
-    const admin = new User({ username: "admin", role: "admin" });
+    const admin = new User({ email: "admin@example.com", role: "admin" });
     await admin.setPassword("admin123");
     await admin.save();
-    console.log("[auth-service] Seeded default admin (username: admin, password: admin123)");
+    console.log("[auth-service] Seeded default admin (email: admin@example.com, password: admin123)");
   }
 }).catch((err) => {
   console.error("[auth-service] MongoDB error:", err.message);
   process.exit(1);
 });
 
+// POST /auth/register
+app.post("/auth/register", async (req, res) => {
+  const { email, password } = req.body || {};
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ message: "Invalid email address" });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ message: "Password must be at least 8 characters" });
+  }
+
+  try {
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) {
+      return res.status(409).json({ message: "An account with that email already exists" });
+    }
+
+    const user = new User({ email: email.toLowerCase(), role: "operator" });
+    await user.setPassword(password);
+    await user.save();
+
+    console.log(`[auth-service] New account registered: ${email}`);
+    return res.status(201).json({ message: "Account created successfully" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // POST /auth/login
 app.post("/auth/login", async (req, res) => {
-  const { username, password } = req.body || {};
-  if (!username || !password) {
-    return res.status(400).json({ message: "Username and password are required" });
+  const { email, password } = req.body || {};
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ message: "Invalid email address" });
   }
   try {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ email: email.toLowerCase() });
     if (!user || !(await user.checkPassword(password))) {
-      return res.status(401).json({ message: "Invalid username or password" });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
     const otp = crypto.randomInt(100000, 999999).toString();
     user.otpCode = otp;
     user.otpExpiresAt = new Date(Date.now() + OTP_EXPIRY_SECS * 1000);
     await user.save();
-    console.log(`[auth-service] OTP for ${username}: ${otp}`); // dev only
-    return res.json({ status: "otp_required", username, otp }); // remove otp field in prod
+    const nodemailer = require("nodemailer");
+
+    const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+        },
+    });
+
+    await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: user.email,             // you'll need to add email field to your User schema
+        subject: "Your verification code",
+        text: `Your code is: ${otp}. It expires in ${OTP_EXPIRY_SECS / 60} minutes.`,
+    });
+
+    return res.json({ status: "otp_required", email });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Internal server error" });
@@ -54,12 +110,12 @@ app.post("/auth/login", async (req, res) => {
 
 // POST /auth/verify-otp
 app.post("/auth/verify-otp", async (req, res) => {
-  const { username, otp } = req.body || {};
-  if (!username || !otp) {
-    return res.status(400).json({ message: "Username and OTP are required" });
+  const { email, otp } = req.body || {};
+  if (!email || !otp) {
+    return res.status(400).json({ message: "Email and OTP are required" });
   }
   try {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ email: email.toLowerCase() });
     if (!user || !user.otpCode) {
       return res.status(401).json({ message: "No OTP pending. Please log in again." });
     }
@@ -75,7 +131,7 @@ app.post("/auth/verify-otp", async (req, res) => {
     await user.save();
 
     const accessToken = jwt.sign(
-      { userId: user._id.toString(), username: user.username, role: user.role },
+      { userId: user._id.toString(), username: user.email, role: user.role },
       JWT_SECRET,
       {
         expiresIn: "15m",

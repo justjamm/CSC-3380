@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { login } from "../lib/apiClient";
 import { useAuth } from "../providers/AuthProvider";
 
@@ -9,11 +10,10 @@ export default function LoginPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, startOtpFlow } = useAuth();
 
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [otpHint, setOtpHint] = useState("");
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
@@ -27,10 +27,8 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      const response = await login(username.trim(), password);
-      startOtpFlow(username.trim());
-      setOtpHint(response?.otp || "");
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      const response = await login(email.trim(), password);
+      startOtpFlow(email.trim());
       router.push("/verify-otp");
     } catch (err) {
       setError(err.message || "Login failed");
@@ -42,16 +40,17 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
       <h1 className="mb-2 text-2xl font-semibold">Sign in</h1>
-      <p className="mb-6 text-sm text-gray-300">Use your middleware credentials to start OTP flow.</p>
+      <p className="mb-6 text-sm text-gray-300">Use your email and password to start OTP flow.</p>
 
       <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-gray-700 bg-black/30 p-5">
         <label className="block text-sm">
-          Username
+          Email
           <input
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
             className="mt-1 w-full rounded-md border border-gray-700 bg-black px-3 py-2"
-            autoComplete="username"
+            autoComplete="email"
             required
           />
         </label>
@@ -69,7 +68,6 @@ export default function LoginPage() {
         </label>
 
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
-        {otpHint ? <p className="text-xs text-yellow-300">Dev OTP hint: {otpHint}</p> : null}
 
         <button
           type="submit"
@@ -79,6 +77,13 @@ export default function LoginPage() {
           {submitting ? "Signing in..." : "Continue to OTP"}
         </button>
       </form>
+
+      <p className="mt-4 text-center text-sm text-gray-400">
+        Don&apos;t have an account?{" "}
+        <Link href="/register" className="text-white underline underline-offset-2">
+          Create one
+        </Link>
+      </p>
     </main>
   );
 }

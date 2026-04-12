@@ -23,21 +23,6 @@
 
 #include <nlohmann/json.hpp>
 
-// ============================================================
-// App.cpp — route registration + business logic wiring.
-//
-// Each route group maps directly to your DFD:
-//
-//   /health/**   → HealthCheck probes (liveness + readiness)
-//   /auth/**     → Frontend → Database credential check
-//   /devices     → InputHandler → Backend Manager
-//   /stream/**   → StreamHandler → CameraStream → Manager
-//   /edr/**      → MiddleLogic EDR → OutputHandler → Frontend
-//
-// ErrorHandler::handle() wraps every route so all exceptions
-// surface as structured JSON — no per-route try/catch needed.
-// ============================================================
-
 namespace {
 
 using Json = nlohmann::json;
@@ -131,7 +116,6 @@ private:
     cfg.audience = "frontend";
     return cfg;
 }
-
 
 [[nodiscard]] std::int64_t nowEpochSeconds() {
     using namespace std::chrono;
@@ -436,10 +420,6 @@ public:
 
 }  // namespace
 
-// ============================================================
-// Construction / Destruction
-// ============================================================
-
 App::App(const Config& cfg)
     : m_cfg(cfg)
     , m_http(std::make_unique<httplib::Server>())
@@ -465,14 +445,9 @@ void App::stop() {
     m_http->stop();
 }
 
-// ============================================================
-// setup() — wire everything together
-// ============================================================
-
 void App::setup() {
     Logger::info("App::setup() — registering routes", "app").log();
 
-    // Global pre-routing hook: log every inbound request
     m_http->set_pre_routing_handler([this](const httplib::Request& req,
                                            httplib::Response& res) {
         Logger::info("Inbound request", "router")
@@ -506,10 +481,9 @@ void App::setup() {
             }
         }
 
-        return httplib::Server::HandlerResponse::Unhandled; // continue to matched route
+        return httplib::Server::HandlerResponse::Unhandled;
     });
 
-    // Register readiness probes (backend TCP reachability)
     HealthCheck::addReadinessProbe(makeBackendProbe());
 
     registerHealthRoutes();
@@ -620,12 +594,7 @@ void App::setup() {
     Logger::info("All routes registered", "app").log();
 }
 
-// ============================================================
-// Health routes
-// ============================================================
-
 void App::registerHealthRoutes() {
-    // Combined liveness + readiness (used by load balancers & frontend)
     m_http->Get("/health", [](const httplib::Request& /*req*/,
                                httplib::Response& res) {
         auto [code, body] = HealthCheck::combined();
@@ -633,7 +602,6 @@ void App::registerHealthRoutes() {
         res.set_content(body, "application/json");
     });
 
-    // Liveness only — always 200 if process is alive
     m_http->Get("/health/live", [](const httplib::Request& /*req*/,
                                    httplib::Response& res) {
         auto [code, body] = HealthCheck::liveness();
@@ -641,7 +609,6 @@ void App::registerHealthRoutes() {
         res.set_content(body, "application/json");
     });
 
-    // Readiness — checks all registered probes (backend, DB, etc.)
     m_http->Get("/health/ready", [](const httplib::Request& /*req*/,
                                     httplib::Response& res) {
         auto [code, body] = HealthCheck::readiness();
@@ -652,12 +619,7 @@ void App::registerHealthRoutes() {
     Logger::debug("Health routes registered: /health, /health/live, /health/ready", "app").log();
 }
 
-// ============================================================
-// Auth routes  (Frontend → Database, per DFD)
-// ============================================================
-
 void App::registerAuthRoutes() {
-    // Forward POST /auth/login to auth-service (Node/MongoDB)
     m_http->Post("/auth/login", [](const httplib::Request& req, httplib::Response& res) {
         ErrorHandler::handle("POST /auth/login", [&]() {
             httplib::Client authClient(std::string(kAuthServiceHost), kAuthServicePort);
@@ -679,7 +641,6 @@ void App::registerAuthRoutes() {
         });
     });
 
-    // Forward POST /auth/verify-otp to auth-service
     m_http->Post("/auth/verify-otp", [](const httplib::Request& req, httplib::Response& res) {
         ErrorHandler::handle("POST /auth/verify-otp", [&]() {
             httplib::Client authClient(std::string(kAuthServiceHost), kAuthServicePort);
@@ -700,14 +661,30 @@ void App::registerAuthRoutes() {
             res.set_content(body, "application/json");
         });
     });
+
+    m_http->Post("/auth/register", [](const httplib::Request& req, httplib::Response& res) {
+        ErrorHandler::handle("POST /auth/register", [&]() {
+            httplib::Client authClient(std::string(kAuthServiceHost), kAuthServicePort);
+            configureBackendClient(authClient);
+            auto result = authClient.Post("/auth/register", req.body, "application/json");
+            if (!result) {
+                res.status = 502;
+                res.set_content(
+                    Json{{"error", "auth_service_unavailable"},
+                         {"message", "Could not reach auth service"}}.dump(),
+                    "application/json");
+                return;
+            }
+            res.status = result->status;
+            res.set_content(result->body, "application/json");
+        }, [&](int code, const std::string& body) {
+            res.status = code;
+            res.set_content(body, "application/json");
+        });
+    });
 }
 
-// ============================================================
-// Camera routes
-// ============================================================
-
 void App::registerCameraRoutes() {
-    // POST /camera/select — persist current camera selection in middleware state
     m_http->Post("/camera/select", [this](const httplib::Request& req,
                                           httplib::Response& res) {
         ErrorHandler::handle(
@@ -757,12 +734,7 @@ void App::registerCameraRoutes() {
     Logger::debug("Camera routes registered: POST /camera/select", "app").log();
 }
 
-// ============================================================
-// Device routes  (InputHandler → Backend Manager, per DFD)
-// ============================================================
-
 void App::registerDeviceRoutes() {
-    // GET /devices — list all known IoT devices from backend
     m_http->Get("/devices", [this](const httplib::Request& req,
                                    httplib::Response& res) {
         ErrorHandler::handle(
@@ -822,12 +794,7 @@ void App::registerDeviceRoutes() {
     Logger::debug("Device routes registered: GET /devices", "app").log();
 }
 
-// ============================================================
-// Stream routes  (StreamHandler → CameraStream → Manager, per DFD)
-// ============================================================
-
 void App::registerStreamRoutes() {
-    // GET /stream/:id — single-frame JPEG passthrough adapter
     m_http->Get(R"(/stream/([^/]+))", [this](const httplib::Request& req,
                                              httplib::Response& res) {
         ErrorHandler::handle(
@@ -884,7 +851,6 @@ void App::registerStreamRoutes() {
             });
     });
 
-    // GET /mjpeg/:id — continuous MJPEG passthrough adapter
     m_http->Get(R"(/mjpeg/([^/]+))", [this](const httplib::Request& req,
                                             httplib::Response& res) {
         ErrorHandler::handle(
@@ -942,10 +908,6 @@ void App::registerStreamRoutes() {
 
     Logger::debug("Stream routes registered: GET /stream/:id, GET /mjpeg/:id", "app").log();
 }
-
-// ============================================================
-// EDR routes  (MiddleLogic → OutputHandler → Frontend, per DFD)
-// ============================================================
 
 void App::registerEdrRoutes() {
     auto alertsHandler = [this](const httplib::Request& req,
@@ -1040,20 +1002,13 @@ void App::registerEdrRoutes() {
             });
     };
 
-    // New frontend-ready endpoint.
     m_http->Get("/alerts", alertsHandler);
-    // Temporary compatibility alias to keep existing consumers functional.
     m_http->Get("/edr/alerts", alertsHandler);
 
     Logger::debug("EDR routes registered: GET /alerts, GET /edr/alerts", "app").log();
 }
 
-// ============================================================
-// Auth middleware helper
-// ============================================================
-
 void App::requireAuth(const std::string& authHeader) {
-    // Expects:  Authorization: Bearer <token>
     if (authHeader.empty() || authHeader.substr(0, 7) != "Bearer ")
         throw AuthError("Missing or malformed Authorization header");
 
@@ -1071,10 +1026,6 @@ void App::requireAuth(const std::string& authHeader) {
         .field("role", authContext->role)
         .log();
 }
-
-// ============================================================
-// Readiness probe: backend TCP reachability
-// ============================================================
 
 ReadinessProbe App::makeBackendProbe() const {
     std::string host = m_cfg.backendHost;
