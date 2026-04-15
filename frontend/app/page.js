@@ -10,6 +10,7 @@ import AlertsOverlay from "./components/AlertsOverlay";
 import LogoutButton from "./components/LogoutButton";
 import CameraMapToggle from "./components/CameraMapToggle";
 import CameraMapPanel from "./components/CameraMapPanel";
+import SettingsPanel from "./components/SettingsPanel";
 import {
   getAlerts,
   getDevices,
@@ -314,6 +315,8 @@ function DashboardPage() {
       />
 
       <AlertsOverlay alerts={alerts} />
+
+      <SettingsPanel />
 
       <LogoutButton onLogout={onLogout} />
 
