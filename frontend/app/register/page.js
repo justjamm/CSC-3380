@@ -52,16 +52,19 @@ export default function RegisterPage() {
   if (success) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
-        <div className="rounded-xl border border-gray-700 bg-black/30 p-5 text-center">
-          <h1 className="mb-2 text-2xl font-semibold">Account created!</h1>
-          <p className="mb-6 text-sm text-gray-300">
-            Your account for <span className="text-white">{email}</span> is ready.
+        <div className="corner-bracket-full rounded-xl border border-accent/40 bg-hud-panel p-5 text-center inset-shadow-sm inset-shadow-accent/15">
+          <p className="mb-2 font-display text-[10px] font-bold uppercase tracking-[0.4em] text-accent/60">
+            {"// ENROLLMENT // COMPLETE"}
+          </p>
+          <h1 className="hud-title mb-3 text-2xl">Identity Logged</h1>
+          <p className="mb-6 font-mono text-[11px] uppercase tracking-[0.2em] text-foreground/70">
+            &gt; Profile for <span className="text-accent">{email}</span> is active.
           </p>
           <Link
             href="/login"
-            className="inline-block w-full rounded-md bg-white px-4 py-2 font-medium text-black text-center"
+            className="hud-button inline-block w-full rounded-md px-4 py-2 text-sm text-center"
           >
-            Go to Sign In
+            Proceed &gt;&gt; Sign In
           </Link>
         </div>
       </main>
@@ -69,66 +72,81 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
-      <h1 className="mb-2 text-2xl font-semibold">Create an account</h1>
-      <p className="mb-6 text-sm text-gray-300">Enter your details to get started.</p>
+    <main className="relative mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
+      <p className="mb-2 font-display text-[10px] font-bold uppercase tracking-[0.4em] text-accent/60">
+        {"// ENROLLMENT // NEW_OPERATOR"}
+      </p>
+      <h1 className="hud-title mb-2 text-3xl">Register</h1>
+      <p className="mb-6 font-mono text-[11px] uppercase tracking-[0.2em] text-foreground/60">
+        &gt; Provide identifiers to request clearance.
+      </p>
 
-      <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-gray-700 bg-black/30 p-5">
-        <label className="block text-sm">
+      <form
+        onSubmit={onSubmit}
+        className="corner-bracket-full space-y-4 rounded-xl border border-accent/40 bg-hud-panel p-5 inset-shadow-sm inset-shadow-accent/15"
+      >
+        <label className="block font-display text-[10px] font-bold uppercase tracking-[0.3em] text-accent">
           Email
           <input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-700 bg-black px-3 py-2"
+            className="hud-input mt-2 w-full rounded-md px-3 py-2 text-sm normal-case"
             autoComplete="email"
             required
           />
         </label>
 
-        <label className="block text-sm">
+        <label className="block font-display text-[10px] font-bold uppercase tracking-[0.3em] text-accent">
           Password
           <input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-700 bg-black px-3 py-2"
+            className="hud-input mt-2 w-full rounded-md px-3 py-2 text-sm normal-case"
             autoComplete="new-password"
             required
           />
-          <span className="mt-2 block text-xs text-gray-500 leading-relaxed">
-            Password must be at least 10 characters and contain at least one
-            special character: <span className="text-gray-300">! @ # $</span>
+          <span className="mt-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-foreground/50 leading-relaxed">
+            &gt; MIN 10 CHARS, REQUIRE:{" "}
+            <span className="text-accent">! @ # $</span>
           </span>
         </label>
 
-        <label className="block text-sm">
+        <label className="block font-display text-[10px] font-bold uppercase tracking-[0.3em] text-accent">
           Confirm password
           <input
             type="password"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-700 bg-black px-3 py-2"
+            className="hud-input mt-2 w-full rounded-md px-3 py-2 text-sm normal-case"
             autoComplete="new-password"
             required
           />
         </label>
 
-        {error ? <p className="text-sm text-red-400">{error}</p> : null}
+        {error ? (
+          <p className="text-glow-danger font-mono text-[11px] uppercase tracking-wider text-danger">
+            ! {error}
+          </p>
+        ) : null}
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-md bg-white px-4 py-2 font-medium text-black disabled:opacity-60"
+          className="hud-button w-full rounded-md px-4 py-2 text-sm"
         >
-          {submitting ? "Creating account..." : "Create account"}
+          {submitting ? "Creating account..." : "Create Account"}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-gray-400">
-        Already have an account?{" "}
-        <Link href="/login" className="text-white underline underline-offset-2">
-          Sign in
+      <p className="mt-4 text-center font-mono text-[11px] uppercase tracking-[0.2em] text-foreground/50">
+        &gt; Previously enrolled?{" "}
+        <Link
+          href="/login"
+          className="text-accent underline underline-offset-4 hover:text-glow"
+        >
+          SIGN IN
         </Link>
       </p>
     </main>

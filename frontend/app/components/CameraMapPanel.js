@@ -3,17 +3,12 @@
 
 import { motion } from "framer-motion";
 
-// Anchor positions expressed as percentages of the homemap.svg viewBox,
-// distributed across the floor plan so up to 9 cameras can be placed.
 const ANCHOR_POSITIONS = [
   { x: 5, y: 90 },
   { x: 50, y: 20 },
   { x: 5, y: 45 }
-  // Add more positions here if you have more cameras to place
 ];
 
-// Frontend-only camera label overrides.
-// Update these values to rename cameras in the map panel UI.
 const CAMERA_LABEL_OVERRIDES = {
   cam1: "Main",
   cam2: "Pantry",
@@ -46,28 +41,28 @@ function CameraNode({ device, position, isSelected, onSelect }) {
       className="group absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
       style={{ left: `${position.x}%`, top: `${position.y}%` }}
     >
-      {/* Pulsing glow ring for selected */}
       {isSelected && (
         <motion.span
-          animate={{ scale: [1, 1.4, 1], opacity: [0.8, 0.2, 0.8] }}
+          animate={{ scale: [1, 1.6, 1], opacity: [0.8, 0.1, 0.8] }}
           transition={{ duration: 2, repeat: Infinity }}
-          className="absolute h-4 w-4 rounded-full border border-green-400 sm:h-5 sm:w-5"
+          className="absolute h-4 w-4 rounded-full border border-accent sm:h-5 sm:w-5"
+          style={{ boxShadow: "0 0 12px var(--color-accent)" }}
         />
       )}
 
-      {/* Node dot */}
       <span
         className={`h-2.5 w-2.5 rounded-full border transition-colors sm:h-3 sm:w-3 ${
           isSelected
-            ? "border-green-300 bg-green-400 shadow-[0_0_8px_rgba(0,255,65,0.8)]"
-            : "border-green-600 bg-green-900 group-hover:bg-green-700"
+            ? "border-accent bg-accent shadow-[0_0_10px_var(--color-accent)]"
+            : "border-accent/60 bg-accent/30 group-hover:bg-accent/60"
         }`}
       />
 
-      {/* Label */}
       <span
-        className={`mt-1 whitespace-nowrap rounded bg-black/70 px-1 py-[1px] font-mono text-[8px] tracking-wide backdrop-blur-sm sm:text-[9px] ${
-          isSelected ? "text-glow-green text-green-300" : "text-green-600 group-hover:text-green-400"
+        className={`mt-1 whitespace-nowrap rounded-sm border px-1 py-[1px] font-display text-[8px] font-bold uppercase tracking-[0.15em] backdrop-blur-sm sm:text-[9px] ${
+          isSelected
+            ? "border-accent/60 bg-black/80 text-accent text-glow"
+            : "border-accent/20 bg-black/70 text-accent/60 group-hover:text-accent"
         }`}
       >
         {displayLabel}
@@ -83,28 +78,29 @@ export default function CameraMapPanel({ devices, selectedCamera, onCameraSelect
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 40, scale: 0.95 }}
       transition={{ type: "spring", damping: 25, stiffness: 300 }}
-      className="fixed right-3 bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] left-3 z-20 max-h-[62vh] overflow-hidden rounded-xl border border-green-800/40 bg-gray-950/90 backdrop-blur-md sm:right-[5vw] sm:bottom-[calc(5vh+3.5rem)] sm:left-auto sm:max-h-none sm:w-[40vw] sm:min-w-[400px] sm:max-w-[640px]"
+      className="fixed right-3 bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] left-3 z-20 max-h-[62vh] overflow-hidden rounded-xl border border-accent/40 bg-hud-panel backdrop-blur-md inset-shadow-sm inset-shadow-accent/15 sm:right-[5vw] sm:bottom-[calc(5vh+3.5rem)] sm:left-auto sm:max-h-none sm:w-[40vw] sm:min-w-[400px] sm:max-w-[640px]"
     >
-      {/* Title bar */}
-      <div className="border-b border-green-800/40 px-3 py-2">
-        <p className="text-glow-green text-center font-mono text-[11px] uppercase tracking-[0.2em] text-green-400 sm:text-xs sm:tracking-[0.3em]">
-          Camera System
+      <div className="relative overflow-hidden border-b border-accent/30 px-3 py-2">
+        <div className="radar-sweep" aria-hidden />
+        <p className="hud-title relative text-center text-[11px] sm:text-xs">
+          {"// CAMERA_SYSTEM"}
         </p>
       </div>
 
-      {/* Map container with floor plan background + overlay nodes */}
       <div className="relative aspect-[1843/1024] w-full">
         <img
           src="/homemap.svg"
           alt="Floor plan"
-          className="absolute inset-0 h-full w-full object-contain opacity-80"
+          className="absolute inset-0 h-full w-full object-contain opacity-70"
+          style={{ filter: "hue-rotate(0deg)" }}
           draggable={false}
         />
 
-        {/* Green tint overlay to match the HUD aesthetic */}
-        <div className="pointer-events-none absolute inset-0 bg-green-950/20 mix-blend-multiply" />
+        <div
+          className="pointer-events-none absolute inset-0 mix-blend-multiply"
+          style={{ background: "color-mix(in srgb, var(--color-accent) 14%, transparent)" }}
+        />
 
-        {/* Camera nodes */}
         {devices.map((device, index) => {
           const position = ANCHOR_POSITIONS[index % ANCHOR_POSITIONS.length];
           return (
@@ -118,7 +114,6 @@ export default function CameraMapPanel({ devices, selectedCamera, onCameraSelect
           );
         })}
 
-        {/* Scanline overlay */}
         <div className="scanline-overlay scanline-sweep pointer-events-none absolute inset-0" />
       </div>
     </motion.div>
