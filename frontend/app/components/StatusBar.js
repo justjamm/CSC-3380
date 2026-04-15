@@ -14,7 +14,7 @@ export default function StatusBar({ wsStatus, lastRealtimeAt, error }) {
   const isConnected = wsStatus === "connected";
 
   return (
-    <div className="fixed top-[calc(env(safe-area-inset-top)+0.75rem)] right-3 left-3 z-20 rounded-lg bg-black/60 p-2.5 backdrop-blur-sm sm:top-[5vh] sm:right-auto sm:left-[5vw] sm:max-w-xs sm:p-3">
+    <div className="fixed top-[calc(env(safe-area-inset-top)+0.75rem)] right-3 left-3 z-20 rounded-lg bg-black/60 p-2.5 backdrop-blur-sm sm:top-auto sm:right-auto sm:bottom-[0.5vh] sm:left-[5vw] sm:max-w-xs sm:p-3">
       <div className="flex items-center gap-2 font-mono text-[11px] text-green-400 sm:text-xs">
         {isConnected ? (
           <motion.span

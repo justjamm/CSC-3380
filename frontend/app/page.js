@@ -19,6 +19,28 @@ import {
 import { useAuth } from "./providers/AuthProvider";
 import useMjpegStream from "./useMjpegStream";
 
+function resolveErrorMessage(value, fallback) {
+  if (typeof value === "string" && value.trim()) {
+    return value;
+  }
+
+  if (value && typeof value === "object") {
+    if (typeof value.message === "string" && value.message.trim()) {
+      return value.message;
+    }
+    if (typeof value.error === "string" && value.error.trim()) {
+      return value.error;
+    }
+    if (value.error && typeof value.error === "object") {
+      if (typeof value.error.message === "string" && value.error.message.trim()) {
+        return value.error.message;
+      }
+    }
+  }
+
+  return fallback;
+}
+
 function DashboardPage() {
   const router = useRouter();
   const { accessToken, logout } = useAuth();
@@ -82,14 +104,14 @@ function DashboardPage() {
             if (!active) {
               return;
             }
-            setError(err.message || "Failed to select default camera");
+            setError(resolveErrorMessage(err, "Failed to select default camera"));
           }
         }
       } catch (err) {
         if (!active) {
           return;
         }
-        setError(err.message || "Failed to load dashboard data");
+        setError(resolveErrorMessage(err, "Failed to load dashboard data"));
       } finally {
         if (active) {
           setLoading(false);
@@ -169,7 +191,7 @@ function DashboardPage() {
             const fallbackId = data.devices[0].id;
             setSelectedCamera(fallbackId);
             selectCamera(fallbackId, accessToken).catch((err) => {
-              setError(err.message || "Failed to select default camera");
+              setError(resolveErrorMessage(err, "Failed to select default camera"));
             });
           }
         }
@@ -186,8 +208,11 @@ function DashboardPage() {
         return;
       }
 
-      if (type === "error" && data?.message) {
-        setError(data.message);
+      if (type === "error") {
+        const realtimeErrorMessage = resolveErrorMessage(data, "");
+        if (realtimeErrorMessage) {
+          setError(realtimeErrorMessage);
+        }
       }
     };
 
@@ -265,7 +290,7 @@ function DashboardPage() {
     try {
       await selectCamera(cameraId, accessToken);
     } catch (err) {
-      setError(err.message || "Failed to select camera");
+      setError(resolveErrorMessage(err, "Failed to select camera"));
     }
   };
 

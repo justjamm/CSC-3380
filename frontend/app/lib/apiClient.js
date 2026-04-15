@@ -17,11 +17,47 @@ function normalizePath(pathname) {
   return trimmed ? trimmed : "";
 }
 
+function extractErrorMessage(payload) {
+  if (!payload) {
+    return "";
+  }
+
+  if (typeof payload === "string") {
+    return payload;
+  }
+
+  if (typeof payload.message === "string" && payload.message.trim()) {
+    return payload.message;
+  }
+
+  if (typeof payload.error === "string" && payload.error.trim()) {
+    return payload.error;
+  }
+
+  if (payload.error && typeof payload.error === "object") {
+    if (typeof payload.error.message === "string" && payload.error.message.trim()) {
+      return payload.error.message;
+    }
+    if (typeof payload.error.error === "string" && payload.error.error.trim()) {
+      return payload.error.error;
+    }
+  }
+
+  return "";
+}
+
 async function parseErrorResponse(response) {
   const contentType = response.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
-    const data = await response.json();
-    return data.message || data.error || `Request failed with status ${response.status}`;
+    try {
+      const data = await response.json();
+      const message = extractErrorMessage(data);
+      if (message) {
+        return message;
+      }
+    } catch {
+      // Fall through to default message.
+    }
   }
 
   const text = await response.text();
