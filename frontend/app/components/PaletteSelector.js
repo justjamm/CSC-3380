@@ -11,48 +11,53 @@ const PALETTES = [
 ];
 
 const STORAGE_KEY = "hud.palette";
+const DEFAULT_PALETTE = "militech-red";
 
 export default function PaletteSelector() {
-  const [active, setActive] = useState("militech-red");
+  const [active, setActive] = useState(() => {
+    if (typeof window === "undefined") {
+      return DEFAULT_PALETTE;
+    }
 
-  useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    const initial = PALETTES.some((p) => p.id === stored) ? stored : "militech-red";
-    setActive(initial);
-    document.documentElement.dataset.palette = initial;
-  }, []);
-
-  const selectPalette = (id) => {
-    setActive(id);
-    document.documentElement.dataset.palette = id;
     try {
-      window.localStorage.setItem(STORAGE_KEY, id);
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (PALETTES.some((palette) => palette.id === stored)) {
+        return stored;
+      }
     } catch {
       // ignore storage errors
     }
-  };
+
+    return DEFAULT_PALETTE;
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.palette = active;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, active);
+    } catch {
+      // ignore storage errors
+    }
+  }, [active]);
 
   return (
     <div
-      className="starting-fade pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 z-[999] flex w-max max-w-[96vw] justify-center px-2 pt-[calc(env(safe-area-inset-top)+0.5rem)]"
+      className="starting-fade"
       aria-label="Palette selector"
     >
-      <div className="hud-surface pointer-events-auto flex items-center gap-2 rounded-full border border-accent/50 px-3 py-1.5 shadow-[0_0_20px_color-mix(in_srgb,var(--color-accent)_20%,transparent)] inset-shadow-sm inset-shadow-accent/20">
-        <span className="hidden font-display text-[9px] font-bold uppercase tracking-[0.35em] text-accent/70 sm:inline">
-          SYS // PALETTE
-        </span>
-        <span className="font-display text-[9px] font-bold uppercase tracking-[0.3em] text-accent/70 sm:hidden">
-          SYS
-        </span>
-        <div className="flex items-center gap-1.5">
+      <div className="rounded-lg border border-accent/35 bg-black/35 p-2.5 inset-shadow-sm inset-shadow-accent/10">
+        <p className="font-display text-[10px] font-bold uppercase tracking-[0.3em] text-accent/70">
+          {"HUD // PALETTE"}
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {PALETTES.map((palette) => {
             const isActive = palette.id === active;
             return (
               <button
                 key={palette.id}
                 type="button"
-                onClick={() => selectPalette(palette.id)}
-                className={`group relative h-5 w-5 rounded-full border transition-all duration-200 ${
+                onClick={() => setActive(palette.id)}
+                className={`group relative h-5 w-5 rounded-full border transition-all duration-200 sm:h-6 sm:w-6 ${
                   isActive
                     ? "scale-110 border-white/80 shadow-[0_0_10px_var(--swatch)]"
                     : "border-white/20 hover:scale-105 hover:border-white/50"

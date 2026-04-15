@@ -42,6 +42,61 @@ function resolveErrorMessage(value, fallback) {
   return fallback;
 }
 
+function getAlertTimestamp(alert) {
+  return Number.isFinite(alert?.timestampMs) ? alert.timestampMs : -1;
+}
+
+function isActiveMotionAlert(alert) {
+  if (!alert || typeof alert !== "object") {
+    return false;
+  }
+
+  const cameraId = typeof alert.cameraId === "string" ? alert.cameraId.trim() : "";
+  if (!cameraId) {
+    return false;
+  }
+
+  if (alert.active === true) {
+    return true;
+  }
+
+  const state = typeof alert.state === "string" ? alert.state.toLowerCase() : "";
+  if (state === "active") {
+    return true;
+  }
+
+  const source = typeof alert.source === "string" ? alert.source.toLowerCase() : "";
+  const severity = typeof alert.severity === "string" ? alert.severity.toLowerCase() : "";
+  return source === "motion-detection" && (severity === "high" || severity === "critical");
+}
+
+function findNewestActiveMotionAlert(alerts) {
+  if (!Array.isArray(alerts) || alerts.length === 0) {
+    return null;
+  }
+
+  let newest = null;
+  for (const alert of alerts) {
+    if (!isActiveMotionAlert(alert)) {
+      continue;
+    }
+
+    if (!newest || getAlertTimestamp(alert) > getAlertTimestamp(newest)) {
+      newest = alert;
+    }
+  }
+
+  return newest;
+}
+
+function getAlertSwitchKey(alert) {
+  const id = typeof alert?.id === "string" ? alert.id : "unknown";
+  const cameraId = typeof alert?.cameraId === "string" ? alert.cameraId : "";
+  const timestamp = getAlertTimestamp(alert);
+  const state = typeof alert?.state === "string" ? alert.state : "";
+  return `${id}|${cameraId}|${timestamp}|${state}`;
+}
+
 function DashboardPage() {
   const router = useRouter();
   const { accessToken, logout } = useAuth();
@@ -49,6 +104,7 @@ function DashboardPage() {
   const [devices, setDevices] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [selectedCamera, setSelectedCamera] = useState("");
+  const [autoSwitchEnabled, setAutoSwitchEnabled] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [wsStatus, setWsStatus] = useState("offline");
@@ -56,11 +112,77 @@ function DashboardPage() {
   const [isMapOpen, setIsMapOpen] = useState(false);
   const reconnectAttemptRef = useRef(0);
   const selectedCameraRef = useRef("");
+  const autoSwitchEnabledRef = useRef(false);
+  const devicesRef = useRef([]);
+  const lastAutoSwitchKeyRef = useRef("");
 
   selectedCameraRef.current = selectedCamera;
+  autoSwitchEnabledRef.current = autoSwitchEnabled;
+  devicesRef.current = devices;
 
   const imgRef = useMjpegStream(selectedCamera, accessToken);
   const displayWsStatus = accessToken ? wsStatus : "offline";
+
+  const selectCameraWithApi = useCallback(
+    async (cameraId, fallbackError = "Failed to select camera") => {
+      setSelectedCamera(cameraId);
+      setError("");
+
+      try {
+        await selectCamera(cameraId, accessToken);
+      } catch (err) {
+        setError(resolveErrorMessage(err, fallbackError));
+      }
+    },
+    [accessToken],
+  );
+
+  const tryAutoSwitchFromAlerts = useCallback(
+    (nextAlerts) => {
+      if (!autoSwitchEnabledRef.current || !accessToken) {
+        return;
+      }
+
+      const nextAlert = findNewestActiveMotionAlert(nextAlerts);
+      if (!nextAlert) {
+        return;
+      }
+
+      const nextCameraId = nextAlert.cameraId.trim();
+      const knownCameraIds = new Set(devicesRef.current.map((device) => device?.id).filter(Boolean));
+      if (knownCameraIds.size > 0 && !knownCameraIds.has(nextCameraId)) {
+        return;
+      }
+
+      const switchKey = getAlertSwitchKey(nextAlert);
+      if (switchKey === lastAutoSwitchKeyRef.current) {
+        return;
+      }
+      lastAutoSwitchKeyRef.current = switchKey;
+
+      if (selectedCameraRef.current === nextCameraId) {
+        return;
+      }
+
+      selectCameraWithApi(nextCameraId, "Failed to auto-switch camera on motion");
+    },
+    [accessToken, selectCameraWithApi],
+  );
+
+  const applyIncomingAlerts = useCallback(
+    (nextAlerts) => {
+      setAlerts(nextAlerts);
+      tryAutoSwitchFromAlerts(nextAlerts);
+    },
+    [tryAutoSwitchFromAlerts],
+  );
+
+  useEffect(() => {
+    if (!autoSwitchEnabled) {
+      return;
+    }
+    tryAutoSwitchFromAlerts(alerts);
+  }, [autoSwitchEnabled, alerts, tryAutoSwitchFromAlerts]);
 
   const loadSnapshot = useCallback(async () => {
     const [devicesResponse, alertsResponse] = await Promise.all([
@@ -76,10 +198,10 @@ function DashboardPage() {
       : [];
 
     setDevices(nextDevices);
-    setAlerts(nextAlerts);
+    applyIncomingAlerts(nextAlerts);
 
     return nextDevices;
-  }, [accessToken]);
+  }, [accessToken, applyIncomingAlerts]);
 
   useEffect(() => {
     if (!accessToken) {
@@ -142,7 +264,7 @@ function DashboardPage() {
           return;
         }
         if (Array.isArray(alertsResponse?.alerts)) {
-          setAlerts(alertsResponse.alerts);
+          applyIncomingAlerts(alertsResponse.alerts);
         }
       } catch {
         // Keep polling even if a refresh attempt fails.
@@ -161,7 +283,7 @@ function DashboardPage() {
         clearTimeout(pollTimer);
       }
     };
-  }, [accessToken]);
+  }, [accessToken, applyIncomingAlerts]);
 
   useEffect(() => {
     if (!accessToken) {
@@ -204,7 +326,7 @@ function DashboardPage() {
 
       if (type === "alert") {
         if (Array.isArray(data.alerts)) {
-          setAlerts(data.alerts);
+          applyIncomingAlerts(data.alerts);
         }
         return;
       }
@@ -282,17 +404,10 @@ function DashboardPage() {
         socket.close();
       }
     };
-  }, [accessToken]);
+  }, [accessToken, applyIncomingAlerts]);
 
   const onCameraChange = async (cameraId) => {
-    setSelectedCamera(cameraId);
-    setError("");
-
-    try {
-      await selectCamera(cameraId, accessToken);
-    } catch (err) {
-      setError(resolveErrorMessage(err, "Failed to select camera"));
-    }
+    await selectCameraWithApi(cameraId, "Failed to select camera");
   };
 
   const onLogout = () => {
@@ -316,7 +431,10 @@ function DashboardPage() {
 
       <AlertsOverlay alerts={alerts} />
 
-      <SettingsPanel />
+      <SettingsPanel
+        autoSwitchEnabled={autoSwitchEnabled}
+        onAutoSwitchToggle={setAutoSwitchEnabled}
+      />
 
       <LogoutButton onLogout={onLogout} />
 
