@@ -38,50 +38,65 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
-      <h1 className="mb-2 text-2xl font-semibold">Sign in</h1>
-      <p className="mb-6 text-sm text-gray-300">Use your email and password to start OTP flow.</p>
+    <main className="relative mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
+      <p className="mb-2 font-display text-[10px] font-bold uppercase tracking-[0.4em] text-accent/60">
+        {"// SECURE_ACCESS // TIER_01"}
+      </p>
+      <h1 className="hud-title mb-2 text-3xl">Authenticate</h1>
+      <p className="mb-6 font-mono text-[11px] uppercase tracking-[0.2em] text-foreground/60">
+        &gt; Submit credentials to initiate OTP handshake.
+      </p>
 
-      <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-gray-700 bg-black/30 p-5">
-        <label className="block text-sm">
+      <form
+        onSubmit={onSubmit}
+        className="corner-bracket-full space-y-4 rounded-xl border border-accent/40 bg-hud-panel p-5 inset-shadow-sm inset-shadow-accent/15"
+      >
+        <label className="block font-display text-[10px] font-bold uppercase tracking-[0.3em] text-accent">
           Email
           <input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-700 bg-black px-3 py-2"
+            className="hud-input mt-2 w-full rounded-md px-3 py-2 text-sm normal-case"
             autoComplete="email"
             required
           />
         </label>
 
-        <label className="block text-sm">
+        <label className="block font-display text-[10px] font-bold uppercase tracking-[0.3em] text-accent">
           Password
           <input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-700 bg-black px-3 py-2"
+            className="hud-input mt-2 w-full rounded-md px-3 py-2 text-sm normal-case"
             autoComplete="current-password"
             required
           />
         </label>
 
-        {error ? <p className="text-sm text-red-400">{error}</p> : null}
+        {error ? (
+          <p className="text-glow-danger font-mono text-[11px] uppercase tracking-wider text-danger">
+            ! {error}
+          </p>
+        ) : null}
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-md bg-white px-4 py-2 font-medium text-black disabled:opacity-60"
+          className="hud-button w-full rounded-md px-4 py-2 text-sm"
         >
-          {submitting ? "Signing in..." : "Continue to OTP"}
+          {submitting ? "Signing in..." : "Continue >> OTP"}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-gray-400">
-        Don&apos;t have an account?{" "}
-        <Link href="/register" className="text-white underline underline-offset-2">
-          Create one
+      <p className="mt-4 text-center font-mono text-[11px] uppercase tracking-[0.2em] text-foreground/50">
+        &gt; No credentials on record?{" "}
+        <Link
+          href="/register"
+          className="text-accent underline underline-offset-4 hover:text-glow"
+        >
+          REQUEST ACCESS
         </Link>
       </p>
     </main>

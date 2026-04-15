@@ -9,39 +9,46 @@ const MAX_SEEN_ALERT_KEYS = 800;
 
 const SEVERITY_STYLES = {
   critical: {
-    border: "border-red-500",
-    text: "text-red-300",
-    badgeBackground: "bg-red-950/40",
+    border: "border-danger",
+    text: "text-danger",
+    glow: "text-glow-danger",
+    badgeBackground: "bg-danger/20",
   },
   high: {
-    border: "border-red-500",
-    text: "text-red-300",
-    badgeBackground: "bg-red-950/40",
+    border: "border-danger",
+    text: "text-danger",
+    glow: "text-glow-danger",
+    badgeBackground: "bg-danger/20",
   },
   medium: {
-    border: "border-yellow-400",
-    text: "text-yellow-300",
-    badgeBackground: "bg-yellow-950/40",
+    border: "border-warn",
+    text: "text-warn",
+    glow: "",
+    badgeBackground: "bg-warn/20",
   },
   warning: {
-    border: "border-yellow-400",
-    text: "text-yellow-300",
-    badgeBackground: "bg-yellow-950/40",
+    border: "border-warn",
+    text: "text-warn",
+    glow: "",
+    badgeBackground: "bg-warn/20",
   },
   low: {
-    border: "border-green-400",
-    text: "text-green-300",
-    badgeBackground: "bg-green-950/40",
+    border: "border-accent",
+    text: "text-accent",
+    glow: "text-glow",
+    badgeBackground: "bg-accent/15",
   },
   info: {
-    border: "border-green-400",
-    text: "text-green-300",
-    badgeBackground: "bg-green-950/40",
+    border: "border-accent",
+    text: "text-accent",
+    glow: "text-glow",
+    badgeBackground: "bg-accent/15",
   },
   default: {
-    border: "border-gray-500",
-    text: "text-gray-300",
-    badgeBackground: "bg-gray-900/40",
+    border: "border-white/40",
+    text: "text-white/70",
+    glow: "",
+    badgeBackground: "bg-white/10",
   },
 };
 
@@ -200,17 +207,17 @@ export default function AlertsOverlay({ alerts }) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -14, scale: 0.96 }}
                 transition={{ type: "spring", stiffness: 360, damping: 28 }}
-                className={`pointer-events-auto rounded-lg border border-green-900/50 border-l-4 ${style.border} bg-black/75 p-2.5 backdrop-blur-sm`}
+                className={`pointer-events-auto rounded-lg border border-accent/40 border-l-4 ${style.border} bg-hud-panel p-2.5 backdrop-blur-sm inset-shadow-sm inset-shadow-accent/10`}
               >
-                <p className="truncate font-mono text-[11px] font-medium text-green-300 sm:text-xs">
-                  {alert?.id || "alert"}
+                <p className="truncate font-display text-[10px] font-bold uppercase tracking-[0.25em] text-accent sm:text-[11px]">
+                  &gt; {alert?.id || "alert"}
                 </p>
                 <p
-                  className={`mt-1 inline-block rounded px-1.5 py-0.5 font-mono text-[10px] uppercase sm:text-[11px] ${style.text} ${style.badgeBackground}`}
+                  className={`mt-1 inline-block rounded-sm px-1.5 py-0.5 font-display text-[10px] font-bold uppercase tracking-[0.2em] sm:text-[11px] ${style.text} ${style.glow} ${style.badgeBackground}`}
                 >
-                  {alert?.severity || "info"}
+                  [ {alert?.severity || "info"} ]
                 </p>
-                <p className="mt-1 line-clamp-2 font-mono text-[11px] text-gray-300 sm:text-xs">
+                <p className="mt-1 line-clamp-2 font-mono text-[11px] text-foreground/80 sm:text-xs">
                   {alert?.message || "No alert message provided"}
                 </p>
               </motion.div>
@@ -222,17 +229,17 @@ export default function AlertsOverlay({ alerts }) {
       <button
         type="button"
         onClick={() => setIsHistoryOpen((current) => !current)}
-        className="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] z-30 flex h-12 w-12 items-center justify-center rounded-lg border border-green-700/50 bg-black/70 backdrop-blur-sm transition-colors hover:bg-green-900/40 sm:right-[calc(5vw+0.75rem)] sm:bottom-[calc(5vh+4.25rem)]"
+        className="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] z-30 flex h-12 w-12 items-center justify-center rounded-lg border border-accent/50 bg-hud-surface text-accent backdrop-blur-sm transition-colors hover:bg-accent/15 hover:shadow-[0_0_14px_color-mix(in_srgb,var(--color-accent)_40%,transparent)] inset-shadow-sm inset-shadow-accent/20 sm:right-[calc(5vw+0.75rem)] sm:bottom-[calc(5vh+4.25rem)]"
         aria-label={isHistoryOpen ? "Close alerts history" : "Open alerts history"}
       >
         <motion.div
           animate={{ rotate: isHistoryOpen ? 45 : 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
         >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="2" y="3" width="16" height="2" rx="1" fill="#00ff41" />
-            <rect x="2" y="9" width="16" height="2" rx="1" fill="#00ff41" />
-            <rect x="2" y="15" width="16" height="2" rx="1" fill="#00ff41" />
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="3" width="16" height="2" rx="1" />
+            <rect x="2" y="9" width="16" height="2" rx="1" />
+            <rect x="2" y="15" width="16" height="2" rx="1" />
           </svg>
         </motion.div>
       </button>
@@ -244,17 +251,19 @@ export default function AlertsOverlay({ alerts }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed right-3 bottom-[calc(env(safe-area-inset-bottom)+8.25rem)] left-3 z-30 overflow-hidden rounded-xl border border-green-800/40 bg-gray-950/90 backdrop-blur-md sm:right-[5vw] sm:bottom-[calc(5vh+8rem)] sm:left-auto sm:w-[24rem] sm:max-w-[38vw]"
+            className="fixed right-3 bottom-[calc(env(safe-area-inset-bottom)+8.25rem)] left-3 z-30 overflow-hidden rounded-xl border border-accent/40 bg-hud-panel backdrop-blur-md inset-shadow-sm inset-shadow-accent/15 sm:right-[5vw] sm:bottom-[calc(5vh+8rem)] sm:left-auto sm:w-[24rem] sm:max-w-[38vw]"
           >
-            <div className="border-b border-green-800/40 px-3 py-2">
-              <p className="text-glow-green text-center font-mono text-[11px] uppercase tracking-[0.2em] text-green-400 sm:text-xs sm:tracking-[0.3em]">
-                Alert History
+            <div className="relative border-b border-accent/30 px-3 py-2">
+              <p className="hud-title text-center text-[11px] sm:text-xs">
+                {"// ALERT_ARCHIVE"}
               </p>
             </div>
 
             <div className="hud-scrollbar max-h-[48vh] overflow-y-auto p-3">
               {sortedAlerts.length === 0 ? (
-                <p className="font-mono text-[11px] text-gray-500 sm:text-xs">NO ALERTS RECORDED</p>
+                <p className="font-mono text-[11px] uppercase tracking-wider text-foreground/40 sm:text-xs">
+                  &gt; NO ALERTS RECORDED
+                </p>
               ) : (
                 sortedAlerts.map((alert, index) => {
                   const style = getSeverityStyle(alert?.severity);
@@ -263,18 +272,18 @@ export default function AlertsOverlay({ alerts }) {
                   return (
                     <div
                       key={itemKey}
-                      className={`mb-2 rounded-md border border-green-900/40 border-l-4 ${style.border} bg-black/40 p-2`}
+                      className={`mb-2 rounded-md border border-accent/25 border-l-4 ${style.border} bg-black/50 p-2`}
                     >
-                      <p className="truncate font-mono text-[11px] font-medium text-green-300 sm:text-xs">
-                        {alert?.id || `alert-${index + 1}`}
+                      <p className="truncate font-display text-[10px] font-bold uppercase tracking-[0.2em] text-accent sm:text-[11px]">
+                        &gt; {alert?.id || `alert-${index + 1}`}
                       </p>
-                      <p className={`font-mono text-[10px] uppercase sm:text-[11px] ${style.text}`}>
-                        {alert?.severity || "info"}
+                      <p className={`font-display text-[10px] font-bold uppercase tracking-[0.2em] sm:text-[11px] ${style.text} ${style.glow}`}>
+                        [ {alert?.severity || "info"} ]
                       </p>
-                      <p className="mt-1 font-mono text-[11px] text-gray-300 sm:text-xs">
+                      <p className="mt-1 font-mono text-[11px] text-foreground/80 sm:text-xs">
                         {alert?.message || "No alert message provided"}
                       </p>
-                      <p className="mt-1 font-mono text-[10px] text-gray-500 sm:text-[11px]">
+                      <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-foreground/40 sm:text-[11px]">
                         {formatTimestamp(alert?.timestampMs)}
                       </p>
                     </div>
