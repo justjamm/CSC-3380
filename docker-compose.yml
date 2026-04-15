@@ -5,6 +5,8 @@ services:
       - "27018:27017"
     volumes: 
       - mongo_data:/data/db
+    networks:
+      - edr-network
   frontend:
     build:
       context: ./frontend
@@ -16,17 +18,15 @@ services:
     #   docker compose up --build frontend
     environment:
       - NEXT_PUBLIC_STREAM_URL=${NEXT_PUBLIC_STREAM_URL:-/api}
-      - STREAM_INTERNAL_URL=${STREAM_INTERNAL_URL:-http://motion-detection:8080}
+      - STREAM_INTERNAL_URL=${STREAM_INTERNAL_URL:-http://middleware:8080}
       - NEXT_PUBLIC_MEDIAMTX_URL=${NEXT_PUBLIC_MEDIAMTX_URL:-http://localhost:8889}
       - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-ws://localhost:8085}
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8085}
       - ALLOWED_DEV_ORIGINS=${ALLOWED_DEV_ORIGINS:-localhost,127.0.0.1,192.168.0.213}
       # - WATCHPACK_POLLING=true  # Re-enable if bind mount is restored
     depends_on:
-      - backend
       - mediamtx
       - middleware
-      - motion-detection
     networks:
       - edr-network
 
@@ -40,30 +40,64 @@ services:
     environment:
       - MTX_PATHS_CAM_SOURCE=rtsp://${RTSP_USER}:${RTSP_PASS}@${RTSP_HOST}:${RTSP_PORT}/${RTSP_PATH}
       - MTX_PATHS_CAM2_SOURCE=rtsp://${RTSP_USER}:${RTSP_PASS}@${RTSP_HOST_2}:${RTSP_PORT}/${RTSP_PATH}
+      - MTX_PATHS_CAM3_SOURCE=rtsp://${RTSP_USER}:${RTSP_PASS}@${RTSP_HOST_3}:${RTSP_PORT}/${RTSP_PATH}
     networks:
       - edr-network
 
   middleware:
     build:
-      context: ./middleware/api-gateway
-      dockerfile: Dockerfile.dev
+      context: ./middleware
+      dockerfile_inline: |
+        FROM gcc:13-bookworm
+        WORKDIR /app
+        RUN apt-get update && apt-get install -y --no-install-recommends cmake make && rm -rf /var/lib/apt/lists/*
+        COPY . .
+        RUN cmake -S . -B build-docker && cmake --build build-docker -j"$(nproc)"
+        EXPOSE 8080
+        CMD ["./build-docker/middleware"]
     ports:
       - "${MIDDLEWARE_PORT:-8085}:8080"
     environment:
       - PORT=8080
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=8080
+      - STREAM_HOST=${STREAM_HOST:-motion-detection}
+      - STREAM_PORT=${STREAM_PORT:-8080}
+      - JWT_SECRET=${JWT_SECRET:-middleware-dev-signing-secret}
+    depends_on:
+      - backend
+      - motion-detection
+      - auth-service
     networks:
       - edr-network
+  
+  auth-service:
+      build:
+        context: ./middleware/auth-service
+        dockerfile: Dockerfile.dev
+      expose:
+        - "3002"
+      environment:
+        - MONGO_URI=mongodb://mongo:27017/edr
+        - JWT_SECRET=${JWT_SECRET:-middleware-dev-signing-secret}
+        - OTP_EXPIRY_SECS=${OTP_EXPIRY_SECS:-300}
+        - EMAIL_USER=${EMAIL_USER}
+        - EMAIL_PASS=${EMAIL_PASS}
+      depends_on:
+        - mongo
+      networks:
+        - edr-network
   
 
   motion-detection:
     build:
       context: ./middleware/motion-detection
       dockerfile: Dockerfile
-    ports:
-      - "${MOTION_PORT:-8083}:8080"
+    expose:
+      - "8080"
     environment:
       - BACKEND_URL=http://backend:8080
-      - CAMERAS=cam1,cam2
+      - CAMERAS=cam1,cam2,cam3
       - IDLE_DROP=${IDLE_DROP:-5}
       - ACTIVE_DROP=${ACTIVE_DROP:-1}
       - COOLDOWN_FRAMES=${COOLDOWN_FRAMES:-30}
@@ -84,6 +118,7 @@ services:
     environment:
       - RTSP_INPUT_URL=${RTSP_INPUT_URL:-rtsp://mediamtx:8554/cam}
       - RTSP_INPUT_URL_2=${RTSP_INPUT_URL_2:-rtsp://mediamtx:8554/cam2}
+      - RTSP_INPUT_URL_3=${RTSP_INPUT_URL_3:-rtsp://mediamtx:8554/cam3}
     depends_on:
       - mediamtx
     restart: always

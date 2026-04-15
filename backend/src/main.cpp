@@ -15,10 +15,13 @@ int main(int argc, char* argv[]) {
 
     const char* rtsp_env = std::getenv("RTSP_INPUT_URL");
     const char* rtsp_env_2 = std::getenv("RTSP_INPUT_URL_2");
+    const char* rtsp_env_3 = std::getenv("RTSP_INPUT_URL_3");
     std::string rtsp_url = argc > 1 ? argv[1]
                                     : (rtsp_env ? rtsp_env : "rtsp://mediamtx:8554/cam");
     std::string rtsp_url_2 = argc > 2 ? argv[2]
                                       : (rtsp_env_2 ? rtsp_env_2 : "rtsp://mediamtx:8554/cam2");
+    std::string rtsp_url_3 = argc > 3 ? argv[3]
+                                      : (rtsp_env_3 ? rtsp_env_3 : "rtsp://mediamtx:8554/cam3");
 
     if (!manager.addDevice(cameraFactory, "cam1", rtsp_url)) {
         std::cerr << "Failed to add camera device cam1" << std::endl;
@@ -26,6 +29,10 @@ int main(int argc, char* argv[]) {
     }
     if (!manager.addDevice(cameraFactory, "cam2", rtsp_url_2)) {
         std::cerr << "Failed to add camera device cam2" << std::endl;
+        return 1;
+    }
+    if (!manager.addDevice(cameraFactory, "cam3", rtsp_url_3)) {
+        std::cerr << "Failed to add camera device cam3" << std::endl;
         return 1;
     }
 

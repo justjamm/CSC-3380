@@ -8,6 +8,11 @@ namespace middleware::input {
         std::string password;
     };
 
+    struct OtpVerifyRequest {
+        std::string username;
+        std::string otp;
+    };
+
     struct CameraSelectRequest {
         std::string cameraId;
     };

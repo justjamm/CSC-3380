@@ -1,4 +1,4 @@
-#include "middleware\include\output\OutputHandler.hpp"
+#include "output/OutputHandler.hpp"
 
 #include <stdexcept>
 #include <utility>

@@ -35,6 +35,10 @@ struct Config {
     // ---- Backend connection ----
     std::string backendHost;        // BACKEND_HOST (required)
     int         backendPort;        // BACKEND_PORT (required)
+    
+    // ---- Stream source connection ----
+    std::string streamHost;         // STREAM_HOST (optional; defaults to BACKEND_HOST)
+    int         streamPort;         // STREAM_PORT (optional; defaults to BACKEND_PORT)
 
     // ---- Frontend / Auth ----
     std::string jwtSecret;          // JWT_SECRET (required)
@@ -62,6 +66,10 @@ struct Config {
         c.backendHost = getRequired("BACKEND_HOST");
         c.backendPort = getRequiredInt("BACKEND_PORT");
         c.jwtSecret   = getRequired("JWT_SECRET");
+        
+        // Optional stream source — defaults to backend if not overridden
+        c.streamHost = getOr("STREAM_HOST", c.backendHost);
+        c.streamPort = getIntOr("STREAM_PORT", c.backendPort);
 
         // Validate log level enum
         if (c.logLevel != "debug" && c.logLevel != "info" &&
@@ -74,6 +82,8 @@ struct Config {
             throw ConfigError("PORT must be between 1 and 65535");
         if (c.backendPort < 1 || c.backendPort > 65535)
             throw ConfigError("BACKEND_PORT must be between 1 and 65535");
+        if (c.streamPort < 1 || c.streamPort > 65535)
+            throw ConfigError("STREAM_PORT must be between 1 and 65535");
 
         return c;
     }

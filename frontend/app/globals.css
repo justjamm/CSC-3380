@@ -12,3 +12,50 @@ body {
   color: var(--foreground);
   font-family: system-ui, -apple-system, sans-serif;
 }
+
+@keyframes scanline-scroll {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.scanline-overlay {
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 255, 65, 0.03) 2px,
+    rgba(0, 255, 65, 0.03) 4px
+  );
+}
+
+.scanline-sweep::after {
+  content: "";
+  position: absolute;
+  top: -100%;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 255, 65, 0.04) 50%,
+    transparent 100%
+  );
+  animation: scanline-scroll 8s linear infinite;
+  pointer-events: none;
+}
+
+.hud-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.hud-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+.hud-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 65, 0.3);
+  border-radius: 2px;
+}
+
+.text-glow-green {
+  text-shadow: 0 0 6px rgba(0, 255, 65, 0.5), 0 0 12px rgba(0, 255, 65, 0.2);
+}

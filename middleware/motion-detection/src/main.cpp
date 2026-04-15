@@ -1,7 +1,9 @@
 #include "CameraProcessor.h"
 #include <httplib.h>
 #include <json.hpp>
+#include <algorithm>
 #include <chrono>
+#include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -32,11 +34,44 @@ static std::vector<std::string> split(const std::string& s, char delim) {
     return tokens;
 }
 
+static std::size_t parseAlertLimit(const httplib::Request& req) {
+    constexpr std::size_t kDefaultLimit = 50;
+    constexpr std::size_t kMaxLimit = 200;
+
+    if (!req.has_param("limit")) {
+        return kDefaultLimit;
+    }
+
+    try {
+        const int parsed = std::stoi(req.get_param_value("limit"));
+        if (parsed < 1) {
+            return kDefaultLimit;
+        }
+        return std::min<std::size_t>(static_cast<std::size_t>(parsed), kMaxLimit);
+    } catch (...) {
+        return kDefaultLimit;
+    }
+}
+
+static nlohmann::json toJson(const MotionAlert& alert) {
+    return nlohmann::json{
+        {"id", alert.id},
+        {"severity", alert.severity},
+        {"source", alert.source},
+        {"message", alert.message},
+        {"cameraId", alert.cameraId},
+        {"room", alert.room},
+        {"state", alert.state},
+        {"timestampMs", alert.timestampMs},
+        {"active", alert.active}
+    };
+}
+
 int main() {
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
     std::string backend_url = getEnv("BACKEND_URL", "http://backend:8080");
-    std::string cameras_str = getEnv("CAMERAS", "cam1,cam2");
+    std::string cameras_str = getEnv("CAMERAS", "cam1,cam2,cam3");
     int idle_drop = getEnvInt("IDLE_DROP", 5);
     int active_drop = getEnvInt("ACTIVE_DROP", 1);
     int cooldown = getEnvInt("COOLDOWN_FRAMES", 30);
@@ -140,6 +175,36 @@ int main() {
             res.status = 503;
             res.set_content("{\"status\":\"starting\",\"stream\":\"waiting_for_frames\"}", "application/json");
         }
+    });
+
+    svr.Get("/alerts", [&](const httplib::Request& req, httplib::Response& res) {
+        const std::size_t limit = parseAlertLimit(req);
+
+        std::vector<MotionAlert> mergedAlerts;
+        for (const auto& processor : processors) {
+            auto cameraAlerts = processor->getRecentAlerts(limit);
+            mergedAlerts.insert(mergedAlerts.end(), cameraAlerts.begin(), cameraAlerts.end());
+        }
+
+        std::sort(mergedAlerts.begin(), mergedAlerts.end(), [](const MotionAlert& lhs,
+                                                               const MotionAlert& rhs) {
+            return lhs.timestampMs > rhs.timestampMs;
+        });
+        if (mergedAlerts.size() > limit) {
+            mergedAlerts.resize(limit);
+        }
+
+        nlohmann::json alerts = nlohmann::json::array();
+        for (const auto& alert : mergedAlerts) {
+            alerts.push_back(toJson(alert));
+        }
+
+        res.set_content(
+            nlohmann::json{
+                {"alerts", alerts},
+                {"count", alerts.size()}
+            }.dump(),
+            "application/json");
     });
 
     svr.Get("/stream", [&](const httplib::Request&, httplib::Response& res) {

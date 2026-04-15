@@ -1,36 +1,65 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getStreamFrame } from "./lib/apiClient";
 
-export default function useMjpegStream(cameraId) {
+export default function useMjpegStream(cameraId, accessToken) {
   const imgRef = useRef(null);
 
   useEffect(() => {
-    const streamBaseUrl =
-      (process.env.NEXT_PUBLIC_STREAM_URL || "/api").replace(/\/+$/, "");
     const img = imgRef.current;
-    if (!img) return;
+    if (!img) {
+      return;
+    }
+    if (!cameraId || !accessToken) {
+      img.removeAttribute("src");
+      return;
+    }
 
     let retryTimer = null;
-    const streamUrl = `${streamBaseUrl}/mjpeg/${cameraId}`;
+    let active = true;
+    let currentObjectUrl = "";
+    let currentRequest = null;
 
-    const connect = () => {
-      img.src = `${streamUrl}?t=${Date.now()}`;
+    const loadFrame = async () => {
+      currentRequest = new AbortController();
+      try {
+        const blob = await getStreamFrame(cameraId, accessToken, currentRequest.signal);
+        if (!active) {
+          return;
+        }
+
+        const nextObjectUrl = URL.createObjectURL(blob);
+        if (currentObjectUrl) {
+          URL.revokeObjectURL(currentObjectUrl);
+        }
+        currentObjectUrl = nextObjectUrl;
+        img.src = currentObjectUrl;
+
+        retryTimer = setTimeout(loadFrame, 110);
+      } catch {
+        if (!active) {
+          return;
+        }
+        retryTimer = setTimeout(loadFrame, 1500);
+      }
     };
 
-    const onError = () => {
-      if (retryTimer) clearTimeout(retryTimer);
-      retryTimer = setTimeout(connect, 1500);
-    };
-
-    img.addEventListener("error", onError);
-    connect();
+    loadFrame();
 
     return () => {
-      img.removeEventListener("error", onError);
-      if (retryTimer) clearTimeout(retryTimer);
+      active = false;
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+      }
+      if (currentRequest) {
+        currentRequest.abort();
+      }
+      if (currentObjectUrl) {
+        URL.revokeObjectURL(currentObjectUrl);
+      }
     };
-  }, [cameraId]);
+  }, [cameraId, accessToken]);
 
   return imgRef;
 }
