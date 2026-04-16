@@ -1,4 +1,4 @@
-# Duncan Home Security Frontend
+# IoT Control Environment Frontend
 
 This folder contains the Next.js dashboard used for operator authentication, camera monitoring, and alert visibility.
 
