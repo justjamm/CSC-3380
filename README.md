@@ -81,5 +81,3 @@ docker compose down
 
 - Frontend details: `frontend/README.md`
 - Middleware details: `middleware/README.MD`
-- Contracts: `contracts/README.md`
-- Test plans: `tests/README.md`
