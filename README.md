@@ -1,4 +1,5 @@
-# CSC-3380 Home Security System
+# IoT Control Environment
+Louisiana State University CSC 3380 Final Project
 
 Full-stack home security project with:
 
@@ -7,7 +8,15 @@ Full-stack home security project with:
 - `backend` (C++ RTSP stream service)
 - `mongo` + `mediamtx` supporting services
 
-## Quick Setup (Judges/Graders)
+## Meet the Duncan Home Security Team
+ - Carter Hendricks: Front End & Crosslayer Integration
+ - Bennett Marceaux: Front End
+ - Simeon Orji: Middleware Development
+ - Benito Mendoza: Middleware Development
+ - Taylor Graham: Middleware Development
+ - Peyton Tran: Back End Development
+
+## Quick Setup
 
 ### 1. Prerequisite
 
