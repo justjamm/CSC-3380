@@ -1,4 +1,4 @@
-# Duncan Home Security Middleware
+# IoT Control Environment Middleware
 
 This directory contains the backend integration layer used by the frontend dashboard. It includes multiple services that work together for auth, camera stream routing, and alert aggregation.
 
