@@ -25,15 +25,18 @@ int main(int argc, char* argv[]) {
 
     if (!manager.addDevice(cameraFactory, "cam1", rtsp_url)) {
         std::cerr << "Failed to add camera device cam1" << std::endl;
-        return 1;
+        //return 1;
+        // made optional
     }
     if (!manager.addDevice(cameraFactory, "cam2", rtsp_url_2)) {
         std::cerr << "Failed to add camera device cam2" << std::endl;
-        return 1;
+        //return 1;
+        // made optional
     }
     if (!manager.addDevice(cameraFactory, "cam3", rtsp_url_3)) {
         std::cerr << "Failed to add camera device cam3" << std::endl;
-        return 1;
+        //return 1;
+        // made optional
     }
 
     httplib::Server svr;
