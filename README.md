@@ -37,6 +37,13 @@ Edit `.env` and set these values:
 
 Tip: if you only have one camera, set all `RTSP_HOST*` values to the same host.
 
+Frontend dev Setup
+
+```bash
+cd frontend
+npm install
+```
+
 ### 3. Start everything
 
 ```bash
@@ -45,7 +52,7 @@ docker compose up --build
 
 ### 4. Open the app
 
-- Frontend: `http://localhost:3000`
+- Frontend: `http://localhost:3001`
 
 ### 5. Login (seeded account)
 
